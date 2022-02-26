@@ -56,6 +56,7 @@ var options = {
 		clean: true,
 		publicPath: ASSET_PATH,
 	},
+	hmrIgnore: ["background", "content"],
 	module: {
 		rules: [
 			{

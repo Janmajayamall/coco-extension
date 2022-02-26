@@ -17,11 +17,11 @@
 		"48": "icon48.png",
 		"128": "icon128.png"
 	},
+	"permissions": ["activeTab", "tabs"],
 	"content_scripts": [
 		{
 			"matches": ["http://*/*", "https://*/*"],
-			"js": ["content.bundle.js"],
-			"css": ["content.styles.css"]
+			"js": ["content.bundle.js"]
 		}
 	]
 }

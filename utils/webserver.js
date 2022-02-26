@@ -8,17 +8,19 @@ var config = require("../webpack.config");
 var path = require("path");
 
 for (var entryName in config.entry) {
-	config.entry[entryName] = [
-		"webpack/hot/dev-server",
-		`webpack-dev-server/client?hot=true&hostname=localhost&port=${process.env.PORT}`,
-	].concat(config.entry[entryName]);
+	if (config.hmrIgnore.find((val) => val == entryName) == undefined) {
+		config.entry[entryName] = [
+			"webpack/hot/dev-server",
+			`webpack-dev-server/client?hot=true&hostname=localhost&port=${process.env.PORT}`,
+		].concat(config.entry[entryName]);
+	}
 }
 
 config.plugins = [new webpack.HotModuleReplacementPlugin()].concat(
 	config.plugins || []
 );
 
-delete config.chromeExtensionBoilerplate;
+delete config.hmrIgnore;
 
 var compiler = webpack(config);
 
