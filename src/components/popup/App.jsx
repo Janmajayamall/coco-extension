@@ -4,14 +4,13 @@ import { SettingsIcon } from "@chakra-ui/icons";
 import CocoFull from "./../../assets/icon128.png";
 import { Routes, Route, useNavigate } from "react-router";
 import Main from "./pages/Main";
-import { constants, getUrlsInfo } from "../utils";
+import { constants, filterUrls, getUrlsInfo, findAllDOMLinks } from "../utils";
 
 function App() {
 	const navigate = useNavigate();
 
-	const [tabUrl, setTabUrl] = useState();
-
-	const [urlQueue, setUrlQueue] = useState([]);
+	const [activeTabId, setActiveTabId] = useState(undefined);
+	const [activeTabUrl, setActiveTabUrl] = useState(undefined);
 
 	const [urlsWithInfo, setUrlsWithInfo] = useState({});
 
@@ -22,16 +21,23 @@ function App() {
 			changeInfo,
 			tab
 		) {
-			if (tab == undefined) {
-				return;
+			if (
+				tab &&
+				tab.status == "complete" &&
+				tab.url != undefined &&
+				tab.id != undefined
+			) {
+				// change the tabUrl
+				setActiveTabId(tab.id);
+				setActiveTabUrl(tab.url);
 			}
 		});
-
-		// let obj = {};
-		// obj[constants.STORAGE_KEYS.URLS] = JSON.stringify({ k: "op" });
-		// console.log(obj, " object stored");
-		// await chrome.storage.local.set(obj);
 	}, []);
+
+	// TODO - remove this is just for testing
+	useEffect(() => {
+		console.log(Object.keys(urlsWithInfo).length, " URLS with info length");
+	}, [urlsWithInfo]);
 
 	useEffect(() => {
 		// listen for messages
@@ -41,91 +47,107 @@ function App() {
 			sendResponse
 		) {
 			if (request) {
-				if (request.type == constants.REQUEST_TYPES.URL_ADD) {
-					const url = request.url;
-					await addUrl(url);
-					// 1. Check whether the URL already exists or not
-					// 2. Query its information from backend (try batching many of them into one)
-					// 3. Probably maintain a queue for URLs to be processed?
+				if (request.type == constants.REQUEST_TYPES.ADD_URLS) {
+					if (activeTabUrl != undefined) {
+						const urls = filterUrls(request.urls);
+						await addUrls(urls);
+					}
 				}
 			}
 		});
 	}, []);
 
-	async function getCurrentTab() {
-		let queryOptions = { active: true, lastFocusedWindow: true };
-		let [tab] = await chrome.tabs.query(queryOptions);
-		return tab;
-	}
+	// whenever tab URL changes, empty urlsWithInfo
+	// and query links from content script
+	useEffect(async () => {
+		if (activeTabUrl != undefined && activeTabId != undefined) {
+			chrome.scripting.executeScript({
+				target: { tabId: activeTabId },
+				function: findAllDOMLinks,
+			});
+		}
+	}, [activeTabUrl, activeTabId]);
+
+	// gets info on queued urls every 2 seconds
+	// useEffect(() => {
+	// 	const interval = setInterval(async () => {
+	// 		// console.log("QUEUE url getting info");
+	// 		await queryQueuedUrlsInfo();
+	// 	}, 60000);
+	// 	return () => clearInterval(interval);
+	// }, []);
+
+	// // invalidate URLS cache every 1 min
+	// useEffect(() => {
+	// 	const interval = setInterval(async () => {
+	// 		// console.log("URLs cache invalidated");
+	// 		await invalidateURLSCache();
+	// 	}, 60000);
+	// 	return () => clearInterval(interval);
+	// }, []);
 
 	// Finds url's info and adds it to
-	// urlsWithInfo state object, only
-	// when url's info exists in URLS cache.
+	// urlsWithInfo state object.
 	// It first checks whether
 	// url's info exists in URLS
 	// cache or not. If it does, then
 	// it adds url along with it's info to
 	// the state object. Otherwise,
-	// adds url to urlQueue, for querying its
-	// information from backend.
-	async function addUrl(url) {
-		// return if url already
-		// exists in urlsWithInfo
-		if (urlsWithInfo[url] != undefined) {
+	// queries url's info from the
+	// backend and updates cache
+	async function addUrls(urls) {
+		if (urls.length == 0) {
 			return;
 		}
 
-		// check whether url related info
-		// exists in urls cache
-		const cacheRes = await queryFromURLSCache(url);
-		if (cacheRes.success == true) {
-			if (urlsWithInfo[url] == undefined) {
-				setUrlsWithInfo({
-					...urlsWithInfo,
-					url: cacheRes.urlInfo,
-				});
+		// get urls cache
+		const urlsInfoCache = await queryFromURLSCache();
+
+		let urlsWithCachedInfo = {};
+		let urlsToBeQueried = [];
+
+		urls.forEach((u) => {
+			if (urlsInfoCache[u] != undefined) {
+				// add to urls with info obj
+				urlsWithCachedInfo[u] = {
+					...urlsInfoCache[u],
+				};
+			} else {
+				// add to urls without info arr
+				urlsToBeQueried.push(u);
 			}
+		});
+
+		// query urls without info
+		const res = await getUrlsInfo(urlsToBeQueried);
+		if (res == undefined) {
 			return;
 		}
-		// url related info does
-		// not exists in urls cache
-		else {
-			// add url to urlQueue,
-			// if it does already exists
-			if (urlQueue.findIndex((val) => val == url) == -1) {
-				setUrlQueue([...urlQueue, url]);
-			}
-		}
+		let resUrlsInfo = res.posts;
+
+		// update urls cache
+		updateURLSCache(resUrlsInfo);
+
+		resUrlsInfo.forEach((info) => {
+			urlsWithCachedInfo[info.url] = info;
+		});
+		setUrlsWithInfo((prevUrlsWithInfo) => ({
+			...prevUrlsWithInfo,
+			...urlsWithCachedInfo,
+		}));
 	}
 
-	// finds url's info from URLS cache
+	// queries  URLS cache
 	// stored in storage.local
-	async function queryFromURLSCache(url) {
+	async function queryFromURLSCache() {
 		const response = await chrome.storage.local.get([
 			constants.STORAGE_KEYS.URLS,
 		]);
 
-		// check whether urls are present &&
-		// urls is of type Object
-		if (
-			response[constants.STORAGE_KEYS.URLS] != undefined &&
+		return response[constants.STORAGE_KEYS.URLS] != undefined &&
 			typeof response[constants.STORAGE_KEYS.URLS] == "object"
-		) {
-			const urlsObj = JSON.parse(response[constants.STORAGE_KEYS.URLS]);
-			const info = Object.keys(urlsObj).find((val) => val == url);
-			if (info != undefined) {
-				return {
-					success: true,
-					urlInfo: info,
-				};
-			}
-		}
-
-		// url info was not found in cache
-		return {
-			success: false,
-			urlInfo: undefined,
-		};
+			? JSON.parse(response[constants.STORAGE_KEYS.URLS])
+			: {};
 	}
 
 	async function updateURLSCache(urlsInfoArr) {
@@ -147,27 +169,10 @@ function App() {
 		await chrome.storage.local.set(storageObj);
 	}
 
-	async function queryQueuedUrlsInfo() {
-		let urls = urlQueue;
-		if (urls.length > 0) {
-			// consume entire queue
-			setUrlQueue([]);
-
-			// get urls info
-			const urlsInfo = await getUrlsInfo(urls);
-
-			// update cache
-			updateURLSCache(urlsInfo);
-
-			// add queries urls info to urlsWithInfo state
-			let _urlsWithInfo = {
-				...urlsWithInfo,
-			};
-			urlsInfo.forEach((info) => {
-				_urlsWithInfo[info.url] = info;
-			});
-			setUrlsWithInfo(_urlsWithInfo);
-		}
+	async function invalidateURLSCache() {
+		let storageObj = {};
+		storageObj[constants.STORAGE_KEYS.URLS] = JSON.stringify({});
+		await chrome.storage.local.set(storageObj);
 	}
 
 	return (
