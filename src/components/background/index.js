@@ -9,8 +9,6 @@ chrome.tabs.onUpdated.addListener(async function (tabId, changeInfo, tab) {
 	if (tab.active == true && tab.url) {
 		// check the status of the url
 		const status = await getURLStatus();
-
-		await chrome.tabs.sendMessage(tab.id, { status });
 	}
 });
 

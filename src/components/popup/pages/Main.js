@@ -1,19 +1,18 @@
 import React, { useEffect, useState } from "react";
 import { ExternalLinkIcon } from "@chakra-ui/icons";
 import { Flex, Link, Spacer, Text } from "@chakra-ui/react";
-import { COLORS } from "../utils";
+import { constants } from "../../utils";
 
 function Page() {
 	return (
 		<Flex flexDirection={"column"} width={"100%"} marginTop={2}>
 			<Flex
 				marginBottom={2}
-				backgroundColor={COLORS.PRIMARY}
+				backgroundColor={constants.COLORS.PRIMARY}
 				flexDirection={"column"}
 				padding={2}
 				borderRadius={8}
 			>
-                
 				<Text fontSize={13} marginBottom={1} fontWeight="semibold">
 					www.gooogle.commdmoidmwodimwmdomom
 				</Text>
