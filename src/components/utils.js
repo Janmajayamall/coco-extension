@@ -7,6 +7,10 @@ export const constants = {
 	STORAGE_KEYS: {
 		URLS: "URLS",
 	},
+	QUERY_STATUS: {
+		FOUND: "FOUND",
+		NOT_FOUND: "NOT_FOUND",
+	},
 };
 
 // TODO
@@ -53,7 +57,7 @@ export async function findAllDOMLinks() {
 	for (var i = 0; i < links.length; i++) {
 		urls.push(links[i].href);
 	}
-
+	console.log(urls, "BRO");
 	await chrome.runtime.sendMessage({
 		// constants.REQUEST_TYPES.ADD_URLS fails
 		// for some reason
