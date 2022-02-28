@@ -6,11 +6,13 @@ import {
 	filterUrls,
 	getUrlsInfo,
 	findAllDOMLinks,
+	webUrl,
 } from "./../../utils";
 import { ReactReduxContext, useDispatch, useSelector } from "react-redux";
 import {
 	sClearUrlsWithInfo,
 	selectActiveTabId,
+	selectActiveTabInfo,
 	selectActiveTabUrl,
 	selectFoundUrlsWithInfo,
 	selectNotFoundUrlsWithInfo,
@@ -23,6 +25,7 @@ function Page() {
 
 	const activeTabUrl = useSelector(selectActiveTabUrl);
 	const activeTabId = useSelector(selectActiveTabId);
+	const activeTabInfo = useSelector(selectActiveTabInfo);
 	const foundUrlsWithInfo = useSelector(selectFoundUrlsWithInfo);
 	const notFoundUrlsWithInfo = useSelector(selectNotFoundUrlsWithInfo);
 
@@ -48,6 +51,21 @@ function Page() {
 				);
 			}
 		});
+	}, []);
+
+	// get current tab, when extension opens
+	useEffect(async () => {
+		let queryOptions = { active: true, currentWindow: true };
+		let [tab] = await chrome.tabs.query(queryOptions);
+		if (tab && tab.url != undefined && tab.id != undefined) {
+			// change tabId and tabUrl
+			dispatch(
+				sUpdateActiveTab({
+					activeTabId: tab.id,
+					activeTabUrl: tab.url,
+				})
+			);
+		}
 	}, []);
 
 	// TODO - remove this is just for testing
@@ -76,6 +94,7 @@ function Page() {
 				if (request.type == constants.REQUEST_TYPES.ADD_URLS) {
 					if (true) {
 						const urls = filterUrls(request.urls);
+
 						await addUrls(urls);
 					}
 				}
@@ -92,6 +111,9 @@ function Page() {
 				target: { tabId: activeTabId },
 				function: findAllDOMLinks,
 			});
+
+			// call add URL for active tab
+			await addUrls([activeTabUrl]);
 		}
 	}, [activeTabUrl, activeTabId]);
 
@@ -201,7 +223,7 @@ function Page() {
 		storageObj[constants.STORAGE_KEYS.URLS] = JSON.stringify({});
 		await chrome.storage.local.set(storageObj);
 	}
-
+	console.log(activeTabInfo);
 	function UrlBox({ info }) {
 		return (
 			<Flex
@@ -234,10 +256,27 @@ function Page() {
 						{"Visit page!"}
 						<ExternalLinkIcon mx="2px" />
 					</Link>
-					<Link fontSize={12} href={info.url} isExternal>
-						{"Add to COCO"}
-						<ExternalLinkIcon mx="2px" />
-					</Link>
+					{info.qStatus == constants.QUERY_STATUS.FOUND ? (
+						<Link
+							fontSize={12}
+							href={`${webUrl}/post/${info.marketIdentifier}`}
+							isExternal
+						>
+							{"Challenge"}
+							<ExternalLinkIcon mx="2px" />
+						</Link>
+					) : (
+						<Link
+							fontSize={12}
+							href={`${webUrl}/new/${encodeURIComponent(
+								info.url
+							)}`}
+							isExternal
+						>
+							{"Add to COCO"}
+							<ExternalLinkIcon mx="2px" />
+						</Link>
+					)}
 					<Spacer />
 					<Text>Status</Text>
 				</Flex>
@@ -247,8 +286,23 @@ function Page() {
 
 	return (
 		<Flex flexDirection={"column"} width={"100%"} marginTop={2}>
-			{Object.values(notFoundUrlsWithInfo).map((info) => {
-				return <UrlBox info={info} />;
+			{activeTabInfo != undefined ? (
+				<>
+					<Text>Active webpage</Text>
+					<UrlBox info={activeTabInfo} />
+				</>
+			) : undefined}
+			<Text>Found other links</Text>
+			{Object.values(foundUrlsWithInfo).map((info, index) => {
+				return <UrlBox key={index} info={info} />;
+			})}
+			<Flex>
+				<Text>Not found links</Text>
+				<Spacer />
+				<Text>Show toggle</Text>
+			</Flex>
+			{Object.values(notFoundUrlsWithInfo).map((info, index) => {
+				return <UrlBox key={index} info={info} />;
 			})}
 		</Flex>
 	);

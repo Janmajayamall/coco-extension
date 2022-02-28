@@ -13,25 +13,40 @@ export const constants = {
 	},
 };
 
-// TODO
+export const webUrl = "http://65.108.59.231:3000";
+
 // Filter for links that
-// should not be checked for.
-// Ex, the ones beginning with news.hacker
+// should not be checked.
+// Ex, the ones containing with news.hacker
 // or Google.com and other such pattern
 export function filterUrls(urls) {
-	return urls;
+	return urls.filter((val) => {
+		// check that val is valid url
+		let reg =
+			/https?:\/\/(www\.)?[-a-zA-Z0-9@:%._\+~#=]{1,256}\.[a-zA-Z0-9()]{1,6}\b([-a-zA-Z0-9()@:%_\+.~#?&//=]*)/;
+		if (!reg.test(val)) {
+			return false;
+		}
+
+		// check URL isn't subdomain of google
+		reg = /\bgoogle\.com\b/;
+		if (reg.test(val)) {
+			return false;
+		}
+		return true;
+	});
 }
 
 const defaultHeaders = {
 	"Content-Type": "application/json",
 };
 
-const baseURL = "http://localhost:8000/";
+const baseURL = "http://65.108.59.231:8000";
 
 // queries URLs info from the backend
 export async function getUrlsInfo(urls) {
 	try {
-		let res = await fetch(baseURL + "post/findPosts", {
+		let res = await fetch(baseURL + "/post/findUrlsInfo", {
 			method: "POST", // *GET, POST, PUT, DELETE, etc.
 			mode: "cors", // no-cors, *cors, same-origin
 			headers: defaultHeaders,
@@ -64,4 +79,5 @@ export async function findAllDOMLinks() {
 		type: "ADD_URLS",
 		urls,
 	});
+	console.log(urls, "BRO AFTER");
 }

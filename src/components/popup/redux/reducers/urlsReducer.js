@@ -5,6 +5,7 @@ import { constants } from "../../../utils";
 const initialState = {
 	foundUrlsWithInfo: new Object(),
 	notFoundUrlsWithInfo: new Object(),
+	activeTabInfo: undefined,
 	activeTabUrl: undefined,
 	activeTabId: undefined,
 };
@@ -28,6 +29,15 @@ const slice = createSlice({
 				...state.notFoundUrlsWithInfo,
 			};
 			urlsWithInfo.forEach((info) => {
+				// if info.url is active tab then set and return
+				if (info.url == state.activeTabUrl) {
+					delete uNotFoundUrlsWithInfo[info.url];
+					delete uFoundUrlsWithInfo[info.url];
+					// set info of active tab url
+					state.activeTabInfo = info;
+					return;
+				}
+
 				if (info.qStatus == constants.QUERY_STATUS.FOUND) {
 					// delete the url from "not found urls with info"
 					// if exists.
@@ -43,7 +53,6 @@ const slice = createSlice({
 
 			state.foundUrlsWithInfo = uFoundUrlsWithInfo;
 			state.notFoundUrlsWithInfo = uNotFoundUrlsWithInfo;
-			console.log(state, " new state");
 		},
 
 		sClearUrlsWithInfo(state, action) {
@@ -59,6 +68,7 @@ export const { sUpdateActiveTab, sUpdateUrlsWithInfo, sClearUrlsWithInfo } =
 
 export const selectActiveTabUrl = (state) => state.urls.activeTabUrl;
 export const selectActiveTabId = (state) => state.urls.activeTabId;
+export const selectActiveTabInfo = (state) => state.urls.activeTabInfo;
 export const selectFoundUrlsWithInfo = (state) => state.urls.foundUrlsWithInfo;
 export const selectNotFoundUrlsWithInfo = (state) =>
 	state.urls.notFoundUrlsWithInfo;
