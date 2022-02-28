@@ -1,7 +1,7 @@
 import urlsReducer from "./urlsReducer";
 
 export default {
-	urlsReducer,
+	urls: urlsReducer,
 };
 
 export * from "./urlsReducer";

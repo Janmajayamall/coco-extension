@@ -18,6 +18,7 @@
 		"128": "icon128.png"
 	},
 	"permissions": ["activeTab", "tabs", "storage", "scripting"],
+	"host_permissions": ["http://*/*", "https://*/*"],
 	"content_scripts": [
 		{
 			"matches": ["http://*/*", "https://*/*"],

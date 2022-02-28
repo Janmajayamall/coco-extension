@@ -18,6 +18,7 @@ const slice = createSlice({
 			state.activeTabUrl = action.payload.activeTabUrl;
 		},
 		sUpdateUrlsWithInfo(state, action) {
+			console.log("making ...");
 			let urlsWithInfo = action.payload.urlsWithInfo;
 
 			let uFoundUrlsWithInfo = {
@@ -42,9 +43,11 @@ const slice = createSlice({
 
 			state.foundUrlsWithInfo = uFoundUrlsWithInfo;
 			state.notFoundUrlsWithInfo = uNotFoundUrlsWithInfo;
+			console.log(state, " new state");
 		},
 
 		sClearUrlsWithInfo(state, action) {
+			console.log("shit I cleared ...");
 			state.foundUrlsWithInfo = new Object();
 			state.notFoundUrlsWithInfo = new Object();
 		},

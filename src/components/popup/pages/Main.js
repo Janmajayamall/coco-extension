@@ -7,7 +7,7 @@ import {
 	getUrlsInfo,
 	findAllDOMLinks,
 } from "./../../utils";
-import { useDispatch, useSelector } from "react-redux";
+import { ReactReduxContext, useDispatch, useSelector } from "react-redux";
 import {
 	sClearUrlsWithInfo,
 	selectActiveTabId,
@@ -25,11 +25,6 @@ function Page() {
 	const activeTabId = useSelector(selectActiveTabId);
 	const foundUrlsWithInfo = useSelector(selectFoundUrlsWithInfo);
 	const notFoundUrlsWithInfo = useSelector(selectNotFoundUrlsWithInfo);
-
-	// const [activeTabId, setActiveTabId] = useState(undefined);
-	// const [activeTabUrl, setActiveTabUrl] = useState(undefined);
-
-	// const [urlsWithInfo, setUrlsWithInfo] = useState({});
 
 	useEffect(async () => {
 		// listen for the active tab url
@@ -51,16 +46,18 @@ function Page() {
 						activeTabUrl: tab.url,
 					})
 				);
-				// setActiveTabId(tab.id);
-				// setActiveTabUrl(tab.url);
 			}
 		});
 	}, []);
 
 	// TODO - remove this is just for testing
 	useEffect(() => {
-		console.log(Object.keys(urlsWithInfo).length, " URLS with info length");
-	}, [urlsWithInfo]);
+		console.log(
+			Object.keys(notFoundUrlsWithInfo).length,
+			Object.keys(foundUrlsWithInfo).length,
+			" URLS with info length"
+		);
+	}, [notFoundUrlsWithInfo, foundUrlsWithInfo]);
 
 	// TODO - remove this is just for testing
 	useEffect(() => {
@@ -74,6 +71,7 @@ function Page() {
 			sender,
 			sendResponse
 		) {
+			console.log(request, " Hey I received request");
 			if (request) {
 				if (request.type == constants.REQUEST_TYPES.ADD_URLS) {
 					if (true) {
@@ -88,7 +86,7 @@ function Page() {
 	// whenever tab URL changes, empty urlsWithInfo
 	// and query links from content script
 	useEffect(async () => {
-		useDispatch(sClearUrlsWithInfo());
+		dispatch(sClearUrlsWithInfo());
 		if (activeTabUrl != undefined && activeTabId != undefined) {
 			chrome.scripting.executeScript({
 				target: { tabId: activeTabId },
@@ -124,15 +122,13 @@ function Page() {
 		// get urls cache
 		const urlsInfoCache = await queryFromURLSCache();
 
-		let urlsWithCachedInfo = {};
+		let urlsWithCachedInfo = [];
 		let urlsToBeQueried = [];
 
 		urls.forEach((u) => {
 			if (urlsInfoCache[u] != undefined) {
 				// add to urls with info obj
-				urlsWithCachedInfo[u] = {
-					...urlsInfoCache[u],
-				};
+				urlsWithCachedInfo.push(urlsInfoCache[u]);
 			} else {
 				// add to urls without info arr
 				urlsToBeQueried.push(u);
@@ -149,10 +145,14 @@ function Page() {
 		// update urls cache
 		updateURLSCache(resUrlsInfo);
 
+		console.log(resUrlsInfo, " this is what I received");
+
 		// update urlsWithInfo state
-		sUpdateUrlsWithInfo({
-			urlsWithInfo: resUrlsInfo,
-		});
+		dispatch(
+			sUpdateUrlsWithInfo({
+				urlsWithInfo: resUrlsInfo,
+			})
+		);
 
 		// resUrlsInfo.forEach((info) => {
 		// 	urlsWithCachedInfo[info.url] = info;
@@ -232,6 +232,10 @@ function Page() {
 				<Flex>
 					<Link fontSize={12} href={info.url} isExternal>
 						{"Visit page!"}
+						<ExternalLinkIcon mx="2px" />
+					</Link>
+					<Link fontSize={12} href={info.url} isExternal>
+						{"Add to COCO"}
 						<ExternalLinkIcon mx="2px" />
 					</Link>
 					<Spacer />
