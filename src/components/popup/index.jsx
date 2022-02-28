@@ -5,6 +5,8 @@ import App from "./App";
 import { ChakraProvider, extendTheme } from "@chakra-ui/react";
 import { MemoryRouter } from "react-router";
 import { mode } from "@chakra-ui/theme-tools";
+import { store } from "./redux/store";
+import { Provider } from "react-redux";
 
 // chakra ui theme
 const theme = extendTheme({
@@ -19,9 +21,11 @@ const theme = extendTheme({
 
 ReactDOM.render(
 	<MemoryRouter>
-		<ChakraProvider theme={theme}>
-			<App />
-		</ChakraProvider>
+		<Provider store={store}>
+			<ChakraProvider theme={theme}>
+				<App />
+			</ChakraProvider>
+		</Provider>
 	</MemoryRouter>,
 	window.document.getElementById("root")
 );

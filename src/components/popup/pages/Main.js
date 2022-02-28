@@ -7,12 +7,29 @@ import {
 	getUrlsInfo,
 	findAllDOMLinks,
 } from "./../../utils";
+import { useDispatch, useSelector } from "react-redux";
+import {
+	sClearUrlsWithInfo,
+	selectActiveTabId,
+	selectActiveTabUrl,
+	selectFoundUrlsWithInfo,
+	selectNotFoundUrlsWithInfo,
+	sUpdateActiveTab,
+	sUpdateUrlsWithInfo,
+} from "../redux/reducers";
 
 function Page() {
-	const [activeTabId, setActiveTabId] = useState(undefined);
-	const [activeTabUrl, setActiveTabUrl] = useState(undefined);
+	const dispatch = useDispatch();
 
-	const [urlsWithInfo, setUrlsWithInfo] = useState({});
+	const activeTabUrl = useSelector(selectActiveTabUrl);
+	const activeTabId = useSelector(selectActiveTabId);
+	const foundUrlsWithInfo = useSelector(selectFoundUrlsWithInfo);
+	const notFoundUrlsWithInfo = useSelector(selectNotFoundUrlsWithInfo);
+
+	// const [activeTabId, setActiveTabId] = useState(undefined);
+	// const [activeTabUrl, setActiveTabUrl] = useState(undefined);
+
+	// const [urlsWithInfo, setUrlsWithInfo] = useState({});
 
 	useEffect(async () => {
 		// listen for the active tab url
@@ -28,16 +45,27 @@ function Page() {
 				tab.id != undefined
 			) {
 				// change tabId and tabUrl
-				setActiveTabId(tab.id);
-				setActiveTabUrl(tab.url);
+				dispatch(
+					sUpdateActiveTab({
+						activeTabId: tab.id,
+						activeTabUrl: tab.url,
+					})
+				);
+				// setActiveTabId(tab.id);
+				// setActiveTabUrl(tab.url);
 			}
 		});
 	}, []);
 
-	// // TODO - remove this is just for testing
-	// useEffect(() => {
-	// 	console.log(Object.keys(urlsWithInfo).length, " URLS with info length");
-	// }, [urlsWithInfo]);
+	// TODO - remove this is just for testing
+	useEffect(() => {
+		console.log(Object.keys(urlsWithInfo).length, " URLS with info length");
+	}, [urlsWithInfo]);
+
+	// TODO - remove this is just for testing
+	useEffect(() => {
+		console.log(" Active tab update ", activeTabId, activeTabUrl);
+	}, [activeTabId, activeTabUrl]);
 
 	useEffect(() => {
 		// listen for messages
@@ -46,7 +74,6 @@ function Page() {
 			sender,
 			sendResponse
 		) {
-			console.log("received urls ", request, activeTabId);
 			if (request) {
 				if (request.type == constants.REQUEST_TYPES.ADD_URLS) {
 					if (true) {
@@ -61,7 +88,7 @@ function Page() {
 	// whenever tab URL changes, empty urlsWithInfo
 	// and query links from content script
 	useEffect(async () => {
-		setUrlsWithInfo({});
+		useDispatch(sClearUrlsWithInfo());
 		if (activeTabUrl != undefined && activeTabId != undefined) {
 			chrome.scripting.executeScript({
 				target: { tabId: activeTabId },
@@ -122,14 +149,19 @@ function Page() {
 		// update urls cache
 		updateURLSCache(resUrlsInfo);
 
-		resUrlsInfo.forEach((info) => {
-			urlsWithCachedInfo[info.url] = info;
+		// update urlsWithInfo state
+		sUpdateUrlsWithInfo({
+			urlsWithInfo: resUrlsInfo,
 		});
 
-		setUrlsWithInfo((prevUrlsWithInfo) => ({
-			...prevUrlsWithInfo,
-			...urlsWithCachedInfo,
-		}));
+		// resUrlsInfo.forEach((info) => {
+		// 	urlsWithCachedInfo[info.url] = info;
+		// });
+
+		// setUrlsWithInfo((prevUrlsWithInfo) => ({
+		// 	...prevUrlsWithInfo,
+		// 	...urlsWithCachedInfo,
+		// }));
 	}
 
 	// queries  URLS cache
@@ -211,7 +243,7 @@ function Page() {
 
 	return (
 		<Flex flexDirection={"column"} width={"100%"} marginTop={2}>
-			{Object.values(urlsWithInfo).map((info) => {
+			{Object.values(notFoundUrlsWithInfo).map((info) => {
 				return <UrlBox info={info} />;
 			})}
 		</Flex>
