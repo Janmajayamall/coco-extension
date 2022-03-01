@@ -5,9 +5,13 @@ import { constants } from "../../../utils";
 const initialState = {
 	foundUrlsWithInfo: new Object(),
 	notFoundUrlsWithInfo: new Object(),
-	activeTabInfo: undefined,
-	activeTabUrl: undefined,
-	activeTabId: undefined,
+	urlsInfoToDisplay: new Object(),
+	activeTab: {
+		tabInfo: undefined,
+		tabUrl: undefined,
+		tabId: undefined,
+		tabType: "NONE",
+	},
 };
 
 const slice = createSlice({
@@ -15,8 +19,18 @@ const slice = createSlice({
 	initialState,
 	reducers: {
 		sUpdateActiveTab(state, action) {
-			state.activeTabId = action.payload.activeTabId;
-			state.activeTabUrl = action.payload.activeTabUrl;
+			state.activeTab = {
+				...action.payload.activeTab,
+			};
+		},
+		sUpdateUrlsInfoToDisplay(state, action) {
+			let update = {
+				...state.urlsInfoToDisplay,
+			};
+			action.payload.urlsInfoToDisplay.forEach((obj) => {
+				update[obj.url] = obj;
+			});
+			state.urlsInfoToDisplay = update;
 		},
 		sUpdateUrlsWithInfo(state, action) {
 			let urlsWithInfo = action.payload.urlsWithInfo;
@@ -61,14 +75,17 @@ const slice = createSlice({
 	},
 });
 
-export const { sUpdateActiveTab, sUpdateUrlsWithInfo, sClearUrlsWithInfo } =
-	slice.actions;
+export const {
+	sUpdateActiveTab,
+	sUpdateUrlsWithInfo,
+	sClearUrlsWithInfo,
+	sUpdateUrlsInfoToDisplay,
+} = slice.actions;
 
-export const selectActiveTabUrl = (state) => state.urls.activeTabUrl;
-export const selectActiveTabId = (state) => state.urls.activeTabId;
-export const selectActiveTabInfo = (state) => state.urls.activeTabInfo;
+export const selectActiveTab = (state) => state.urls.activeTab;
 export const selectFoundUrlsWithInfo = (state) => state.urls.foundUrlsWithInfo;
 export const selectNotFoundUrlsWithInfo = (state) =>
 	state.urls.notFoundUrlsWithInfo;
+export const selectUrlsInfoToDisplay = (state) => state.urls.urlsInfoToDisplay;
 
 export default slice.reducer;

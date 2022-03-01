@@ -10,27 +10,32 @@ import {
 	formatUrlForDisplay,
 	formatOnChainData,
 	observeLinkChanges,
+	getDataFromGoogleSearch,
+	getUrlType,
 } from "./../../utils";
 import { ReactReduxContext, useDispatch, useSelector } from "react-redux";
 import {
 	sClearUrlsWithInfo,
-	selectActiveTabId,
-	selectActiveTabInfo,
-	selectActiveTabUrl,
+	selectActiveTab,
 	selectFoundUrlsWithInfo,
 	selectNotFoundUrlsWithInfo,
+	selectUrlsInfoToDisplay,
 	sUpdateActiveTab,
+	sUpdateUrlsInfoToDisplay,
 	sUpdateUrlsWithInfo,
 } from "../redux/reducers";
 
 function Page() {
 	const dispatch = useDispatch();
 
-	const activeTabUrl = useSelector(selectActiveTabUrl);
-	const activeTabId = useSelector(selectActiveTabId);
-	const activeTabInfo = useSelector(selectActiveTabInfo);
+	// const activeTabUrl = useSelector(selectActiveTabUrl);
+	// const activeTabId = useSelector(selectActiveTabId);
+	// const activeTabInfo = useSelector(selectActiveTabInfo);
+
+	const activeTab = useSelector(selectActiveTab);
 	const foundUrlsWithInfo = useSelector(selectFoundUrlsWithInfo);
 	const notFoundUrlsWithInfo = useSelector(selectNotFoundUrlsWithInfo);
+	const urlsInfoToDisplay = useSelector(selectUrlsInfoToDisplay);
 
 	const [showNotFound, setShowNotFound] = useState(false);
 
@@ -50,8 +55,12 @@ function Page() {
 				// change tabId and tabUrl
 				dispatch(
 					sUpdateActiveTab({
-						activeTabId: tab.id,
-						activeTabUrl: tab.url,
+						activeTab: {
+							tabId: tab.id,
+							tabUrl: tab.url,
+							tabType: getUrlType(tab.url),
+							tabInfo: undefined,
+						},
 					})
 				);
 			}
@@ -66,8 +75,12 @@ function Page() {
 			// change tabId and tabUrl
 			dispatch(
 				sUpdateActiveTab({
-					activeTabId: tab.id,
-					activeTabUrl: tab.url,
+					activeTab: {
+						tabId: tab.id,
+						tabUrl: tab.url,
+						tabType: getUrlType(tab.url),
+						tabInfo: undefined,
+					},
 				})
 			);
 		}
@@ -103,30 +116,65 @@ function Page() {
 						await addUrls(urls);
 					}
 				}
+
+				if (request.type == constants.REQUEST_TYPES.GOOGLE_DOM_INFO) {
+					console.log("received dom info", request.info);
+					await addUrls(request.info);
+				}
 			}
 		});
 	}, []);
 
 	// whenever tab URL changes, empty urlsWithInfo
 	// and query links from content script
-	// and add mutation observation for links
+	// and add mutation observation for lin
 	useEffect(async () => {
 		dispatch(sClearUrlsWithInfo());
-		if (activeTabUrl != undefined && activeTabId != undefined) {
-			chrome.scripting.executeScript({
-				target: { tabId: activeTabId },
-				function: findAllDOMLinks,
-			});
+		if (activeTab.tabUrl != undefined && activeTab.tabId != undefined) {
+			// chrome.scripting.executeScript({
+			// 	target: { tabId: activeTabId },
+			// 	function: findAllDOMLinks,
+			// });
 
-			chrome.scripting.executeScript({
-				target: { tabId: activeTabId },
-				function: observeLinkChanges,
-			});
+			// chrome.scripting.executeScript({
+			// 	target: { tabId: activeTabId },
+			// 	function: observeLinkChanges,
+			// });
+
+			if (activeTab.tabType == constants.ACTIVE_TAB_TYPES.GOOGLE_SEARCH) {
+				chrome.scripting.executeScript({
+					target: { tabId: activeTab.tabId },
+					function: getDataFromGoogleSearch,
+				});
+			}
 
 			// call add URL for active tab
-			await addUrls(filterUrls([activeTabUrl]));
+			// await addUrls(filterUrls([activeTab.tabUrl]));
 		}
-	}, [activeTabUrl, activeTabId]);
+	}, [activeTab]);
+
+	async function addUrls(urlObjs) {
+		if (urlObjs.length == 0) {
+			return;
+		}
+
+		const res = await getUrlsInfo(urlObjs);
+		if (res == undefined) {
+			return;
+		}
+		let resUrlsInfo = res.posts;
+		// update urls to display
+		dispatch(
+			sUpdateUrlsInfoToDisplay({
+				urlsInfoToDisplay: resUrlsInfo,
+			})
+		);
+		// dispatch(
+		// 	sUpdateUrlsWithInfo({
+		// 		urlsWithInfo: resUrlsInfo,
+		// 	})
+		// );
+	}
 
 	// invalidate URLS cache every 1 min
 	// useEffect(() => {
@@ -146,7 +194,7 @@ function Page() {
 	// the state object. Otherwise,
 	// queries url's info from the
 	// backend and updates cache
-	async function addUrls(urls) {
+	async function _addUrls(urls) {
 		console.log(urls, " to be added urls");
 		if (urls.length == 0) {
 			return;
@@ -232,7 +280,7 @@ function Page() {
 		storageObj[constants.STORAGE_KEYS.URLS] = JSON.stringify({});
 		await chrome.storage.local.set(storageObj);
 	}
-	console.log(activeTabInfo);
+
 	function UrlBox({ info }) {
 		const urlMetadata = info.urlMetadata
 			? JSON.parse(info.urlMetadata)
@@ -262,17 +310,32 @@ function Page() {
 					</Tag>
 					<Spacer />
 				</Flex>
-				{urlMetadata.title && urlMetadata.title != "" ? (
+
+				{/* google title is only for google search tab */}
+				{activeTab.tabType ==
+					constants.ACTIVE_TAB_TYPES.GOOGLE_SEARCH &&
+				info.googleTitle ? (
+					<Text fontSize={14} fontWeight="semibold">
+						{info.googleTitle}
+					</Text>
+				) : undefined}
+
+				{/* only show metadata title when tab type is none */}
+				{activeTab.tabType == constants.ACTIVE_TAB_TYPES.NONE &&
+				urlMetadata.title &&
+				urlMetadata.title != "" ? (
 					<Text fontSize={14} fontWeight="semibold">
 						{urlMetadata.title}
 					</Text>
 				) : undefined}
+
 				{info.url ? (
 					<Link fontSize={14} href={info.url} isExternal>
 						{formatUrlForDisplay(info.url)}
 						<ExternalLinkIcon mx="2px" />
 					</Link>
 				) : undefined}
+
 				<Flex>
 					{info.qStatus == constants.QUERY_STATUS.FOUND ? (
 						<Link
@@ -321,7 +384,7 @@ function Page() {
 			marginTop={2}
 			marginBottom={2}
 		>
-			{activeTabInfo != undefined ? (
+			{/* {activeTabInfo != undefined ? (
 				<>
 					<Text
 						fontSize={14}
@@ -332,8 +395,8 @@ function Page() {
 					</Text>
 					<UrlBox info={activeTabInfo} />
 				</>
-			) : undefined}
-			<Text marginBottom={1} fontSize={14} fontWeight={"semibold"}>
+			) : undefined} */}
+			{/* <Text marginBottom={1} fontSize={14} fontWeight={"semibold"}>
 				Other links found
 			</Text>
 			{Object.values(foundUrlsWithInfo).map((info, index) => {
@@ -366,7 +429,15 @@ function Page() {
 				<Flex justifyContent={"center"}>
 					<Text fontSize={14}>Nothing to show</Text>
 				</Flex>
+			) : undefined} */}
+			{Object.values(urlsInfoToDisplay).length == 0 ? (
+				<Flex justifyContent={"center"}>
+					<Text fontSize={14}>Nothing to show</Text>
+				</Flex>
 			) : undefined}
+			{Object.values(urlsInfoToDisplay).map((info, index) => {
+				return <UrlBox key={index} info={info} />;
+			})}
 		</Flex>
 	);
 }

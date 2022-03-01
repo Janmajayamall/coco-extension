@@ -3,6 +3,7 @@ export const constants = {
 	REQUEST_TYPES: {
 		ADD_URLS: "ADD_URLS",
 		DOM_LINKS: "DOM_LINKS",
+		GOOGLE_DOM_INFO: "GOOGLE_DOM_INFO",
 	},
 	STORAGE_KEYS: {
 		URLS: "URLS",
@@ -15,6 +16,10 @@ export const constants = {
 	MARKET_STATUS: {
 		YES: "YES",
 		NO: "NOs",
+	},
+	ACTIVE_TAB_TYPES: {
+		NONE: "NONE",
+		GOOGLE_SEARCH: "GOOGLE_SEARCH",
 	},
 };
 
@@ -39,6 +44,15 @@ export function formatOnChainData(onChainData) {
 		...onChainData,
 		outcome: 1,
 	};
+}
+
+export function getUrlType(url) {
+	// check for google search
+	if (/\b(www.google.com\/search\?)\b/.test(url)) {
+		return constants.ACTIVE_TAB_TYPES.GOOGLE_SEARCH;
+	}
+
+	return constants.ACTIVE_TAB_TYPES.NONE;
 }
 
 // Filter for links that
@@ -79,14 +93,14 @@ const defaultHeaders = {
 const baseURL = "http://65.108.59.231:8000";
 
 // queries URLs info from the backend
-export async function getUrlsInfo(urls) {
+export async function getUrlsInfo(urlObjects) {
 	try {
 		let res = await fetch(baseURL + "/post/findUrlsInfo", {
 			method: "POST", // *GET, POST, PUT, DELETE, etc.
 			mode: "cors", // no-cors, *cors, same-origin
 			headers: defaultHeaders,
 			body: JSON.stringify({
-				urls,
+				urlObjects,
 			}),
 		});
 		res = await res.json();
@@ -147,4 +161,48 @@ export async function observeLinkChanges() {
 
 	// later, you can stop observing
 	// observer.disconnect();
+}
+
+// get links from google search
+export async function getDataFromGoogleSearch() {
+	let res = [];
+
+	// find all normal search info
+	var divs = document.getElementsByClassName("yuRUbf");
+	for (var i = 0; i < divs.length; i++) {
+		// get link and title
+		const url = divs[i].getElementsByTagName("a")[0].href;
+		const googleTitle = divs[i].getElementsByClassName(
+			"LC20lb MBeuO DKV0Md"
+		)[0].innerHTML;
+
+		res.push({
+			url,
+			googleTitle,
+			tabType: "GOOGLE_SEARCH",
+		});
+	}
+
+	// find all google news info
+	var newsDivs = document.getElementsByClassName("ftSUBd");
+	for (var i = 0; i < newsDivs.length; i++) {
+		// get link and title
+		const url = newsDivs[i].getElementsByTagName("a")[0].href;
+		const googleTitle = newsDivs[i].getElementsByClassName(
+			"mCBkyc y355M JQe2Ld nDgy9d"
+		)[0].innerHTML;
+
+		res.push({
+			url,
+			googleTitle,
+			tabType: "GOOGLE_SEARCH",
+		});
+	}
+
+	await chrome.runtime.sendMessage({
+		// constants.REQUEST_TYPES.ADD_URLS fails
+		// for some reason
+		type: "GOOGLE_DOM_INFO",
+		info: res,
+	});
 }
