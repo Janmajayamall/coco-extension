@@ -1,7 +1,7 @@
 {
 	"manifest_version": 3,
-	"name": "Coco chrome extension",
-	"description": "Extension for fact index",
+	"name": "Coco",
+	"description": "COCO is internet's moderation tool",
 	"background": { "service_worker": "background.bundle.js" },
 	"options_page": "options.html",
 	"action": {
@@ -17,14 +17,5 @@
 		"48": "icon48.png",
 		"128": "icon128.png"
 	},
-	"permissions": ["activeTab", "tabs", "storage", "scripting"],
-	"host_permissions": ["http://*/*", "https://*/*"],
-	"content_scripts": [
-		{
-			"matches": ["http://*/*", "https://*/*"],
-			"js": ["content.bundle.js"],
-			"all_frames": true,
-			"run_at": "document_idle"
-		}
-	]
+	"permissions": ["activeTab", "tabs", "storage", "scripting"]
 }

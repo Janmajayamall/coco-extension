@@ -9,6 +9,7 @@ import {
 	webUrl,
 	formatUrlForDisplay,
 	formatOnChainData,
+	observeLinkChanges,
 } from "./../../utils";
 import { ReactReduxContext, useDispatch, useSelector } from "react-redux";
 import {
@@ -73,18 +74,18 @@ function Page() {
 	}, []);
 
 	// TODO - remove this is just for testing
-	useEffect(() => {
-		console.log(
-			Object.keys(notFoundUrlsWithInfo).length,
-			Object.keys(foundUrlsWithInfo).length,
-			" URLS with info length"
-		);
-	}, [notFoundUrlsWithInfo, foundUrlsWithInfo]);
+	// useEffect(() => {
+	// 	console.log(
+	// 		Object.keys(notFoundUrlsWithInfo).length,
+	// 		Object.keys(foundUrlsWithInfo).length,
+	// 		" URLS with info length"
+	// 	);
+	// }, [notFoundUrlsWithInfo, foundUrlsWithInfo]);
 
-	// TODO - remove this is just for testing
-	useEffect(() => {
-		console.log(" Active tab update ", activeTabId, activeTabUrl);
-	}, [activeTabId, activeTabUrl]);
+	// // TODO - remove this is just for testing
+	// useEffect(() => {
+	// 	console.log(" Active tab update ", activeTabId, activeTabUrl);
+	// }, [activeTabId, activeTabUrl]);
 
 	useEffect(() => {
 		// listen for messages
@@ -93,12 +94,12 @@ function Page() {
 			sender,
 			sendResponse
 		) {
-			console.log(request, " Hey I received request");
 			if (request) {
 				if (request.type == constants.REQUEST_TYPES.ADD_URLS) {
 					if (true) {
+						console.log(request.urls, " received urls");
 						const urls = filterUrls(request.urls);
-						console.log("urls after filter ", urls);
+
 						await addUrls(urls);
 					}
 				}
@@ -108,12 +109,18 @@ function Page() {
 
 	// whenever tab URL changes, empty urlsWithInfo
 	// and query links from content script
+	// and add mutation observation for links
 	useEffect(async () => {
 		dispatch(sClearUrlsWithInfo());
 		if (activeTabUrl != undefined && activeTabId != undefined) {
 			chrome.scripting.executeScript({
 				target: { tabId: activeTabId },
 				function: findAllDOMLinks,
+			});
+
+			chrome.scripting.executeScript({
+				target: { tabId: activeTabId },
+				function: observeLinkChanges,
 			});
 
 			// call add URL for active tab
@@ -140,6 +147,7 @@ function Page() {
 	// queries url's info from the
 	// backend and updates cache
 	async function addUrls(urls) {
+		console.log(urls, " to be added urls");
 		if (urls.length == 0) {
 			return;
 		}

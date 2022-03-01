@@ -28,14 +28,14 @@ function App() {
 					}}
 				/>
 				<Spacer />
-				<SettingsIcon
+				{/* <SettingsIcon
 					w={8}
 					h={8}
 					color="red.500"
 					onClick={async () => {
 						navigate("/settings");
 					}}
-				/>
+				/> */}
 			</Flex>
 			<Flex width={"100%"}>
 				<Spacer />

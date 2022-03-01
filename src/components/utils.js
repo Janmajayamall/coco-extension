@@ -64,7 +64,7 @@ export function filterUrls(urls) {
 		// Filter out all links with more than 100 characters.
 		// Links having more than 100 chars are in most cases
 		// used for ads or something irrelevant purpose
-		if (val.length > 100) {
+		if (val.length > 200) {
 			return false;
 		}
 
@@ -102,17 +102,49 @@ async function getCurrentTab() {
 
 // finds all links in DOM
 export async function findAllDOMLinks() {
+	console.log(" Yo I rsioawjdaoisjoceived :P");
 	var links = document.getElementsByTagName("a");
 	let urls = [];
 	for (var i = 0; i < links.length; i++) {
 		urls.push(links[i].href);
 	}
-	console.log(urls, "BRO");
+
 	await chrome.runtime.sendMessage({
 		// constants.REQUEST_TYPES.ADD_URLS fails
 		// for some reason
 		type: "ADD_URLS",
 		urls,
 	});
-	console.log(urls, "BRO AFTER");
+}
+
+// starts observing DOM Link changes
+export async function observeLinkChanges() {
+	// select the target node
+	var target = document.body;
+	console.log(" Yo I received :P");
+	// create an observer instance
+	var observer = new MutationObserver(async function (mutations) {
+		let arr = [];
+		console.log("Mutations triggered");
+		mutations.forEach(function (mutation) {
+			arr.push(mutation.target.href);
+		});
+
+		await chrome.runtime.sendMessage({
+			// constants.REQUEST_TYPES.ADD_URLS fails
+			// for some reason
+			type: "ADD_URLS",
+			urls: arr,
+		});
+		console.log("Mutations triggered finished");
+	});
+
+	// configuration of the observer:
+	var config = { attributes: true, attributeFilter: ["href"], subtree: true };
+
+	// pass in the target node, as well as the observer options
+	observer.observe(target, config);
+
+	// later, you can stop observing
+	// observer.disconnect();
 }
