@@ -11,9 +11,35 @@ export const constants = {
 		FOUND: "FOUND",
 		NOT_FOUND: "NOT_FOUND",
 	},
+	URL_DISPLAY_LENGTH: 100,
+	MARKET_STATUS: {
+		YES: "YES",
+		NO: "NOs",
+	},
 };
 
 export const webUrl = "http://65.108.59.231:3000";
+
+export function formatUrlForDisplay(url) {
+	if (url.length > constants.URL_DISPLAY_LENGTH) {
+		return url.substring(0, constants.URL_DISPLAY_LENGTH - 3) + "...";
+	}
+	return url;
+}
+
+export function formatOnChainData(onChainData) {
+	if (onChainData == undefined) {
+		return {};
+	}
+
+	if (onChainData.existsOnChain == true) {
+		return onChainData;
+	}
+	return {
+		...onChainData,
+		outcome: 1,
+	};
+}
 
 // Filter for links that
 // should not be checked.
@@ -29,10 +55,19 @@ export function filterUrls(urls) {
 		}
 
 		// check URL isn't subdomain of google
-		reg = /\bgoogle\.com\b/;
+		reg =
+			/\b(google\.com|news\.ycombinator\.com|youtube\.com|googleadservices\.com)\b/;
 		if (reg.test(val)) {
 			return false;
 		}
+
+		// Filter out all links with more than 100 characters.
+		// Links having more than 100 chars are in most cases
+		// used for ads or something irrelevant purpose
+		if (val.length > 100) {
+			return false;
+		}
+
 		return true;
 	});
 }

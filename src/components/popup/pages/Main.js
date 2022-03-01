@@ -1,12 +1,14 @@
 import React, { useEffect, useState } from "react";
 import { ExternalLinkIcon } from "@chakra-ui/icons";
-import { Flex, Link, Spacer, Text, Tag } from "@chakra-ui/react";
+import { Flex, Link, Spacer, Text, Tag, Switch } from "@chakra-ui/react";
 import {
 	constants,
 	filterUrls,
 	getUrlsInfo,
 	findAllDOMLinks,
 	webUrl,
+	formatUrlForDisplay,
+	formatOnChainData,
 } from "./../../utils";
 import { ReactReduxContext, useDispatch, useSelector } from "react-redux";
 import {
@@ -28,6 +30,8 @@ function Page() {
 	const activeTabInfo = useSelector(selectActiveTabInfo);
 	const foundUrlsWithInfo = useSelector(selectFoundUrlsWithInfo);
 	const notFoundUrlsWithInfo = useSelector(selectNotFoundUrlsWithInfo);
+
+	const [showNotFound, setShowNotFound] = useState(false);
 
 	useEffect(async () => {
 		// listen for the active tab url
@@ -94,7 +98,7 @@ function Page() {
 				if (request.type == constants.REQUEST_TYPES.ADD_URLS) {
 					if (true) {
 						const urls = filterUrls(request.urls);
-
+						console.log("urls after filter ", urls);
 						await addUrls(urls);
 					}
 				}
@@ -113,7 +117,7 @@ function Page() {
 			});
 
 			// call add URL for active tab
-			await addUrls([activeTabUrl]);
+			await addUrls(filterUrls([activeTabUrl]));
 		}
 	}, [activeTabUrl, activeTabId]);
 
@@ -136,7 +140,6 @@ function Page() {
 	// queries url's info from the
 	// backend and updates cache
 	async function addUrls(urls) {
-		console.log(" in add urls ", activeTabId, activeTabUrl);
 		if (urls.length == 0) {
 			return;
 		}
@@ -166,8 +169,6 @@ function Page() {
 
 		// update urls cache
 		updateURLSCache(resUrlsInfo);
-
-		console.log(resUrlsInfo, " this is what I received");
 
 		// update urlsWithInfo state
 		dispatch(
@@ -225,6 +226,10 @@ function Page() {
 	}
 	console.log(activeTabInfo);
 	function UrlBox({ info }) {
+		const urlMetadata = info.urlMetadata
+			? JSON.parse(info.urlMetadata)
+			: {};
+		const onChainData = formatOnChainData(info.onChainData);
 		return (
 			<Flex
 				marginBottom={2}
@@ -233,41 +238,48 @@ function Page() {
 				padding={2}
 				borderRadius={8}
 			>
-				<Tag
-					size={"md"}
-					variant="solid"
-					colorScheme={
-						info.qStatus == constants.QUERY_STATUS.FOUND
-							? "green"
-							: "red"
-					}
-				>
-					{info.qStatus == constants.QUERY_STATUS.FOUND
-						? "Found"
-						: "Not found"}
-				</Tag>
-				{info.url ? (
-					<Text fontSize={13} marginBottom={1} fontWeight="semibold">
-						{info.url}
+				<Flex>
+					<Tag
+						size={"sm"}
+						variant="solid"
+						colorScheme={
+							info.qStatus == constants.QUERY_STATUS.FOUND
+								? "green"
+								: "red"
+						}
+					>
+						{info.qStatus == constants.QUERY_STATUS.FOUND
+							? "Found"
+							: "Not found"}
+					</Tag>
+					<Spacer />
+				</Flex>
+				{urlMetadata.title && urlMetadata.title != "" ? (
+					<Text fontSize={14} fontWeight="semibold">
+						{urlMetadata.title}
 					</Text>
 				) : undefined}
-				<Flex>
-					<Link fontSize={12} href={info.url} isExternal>
-						{"Visit page!"}
+				{info.url ? (
+					<Link fontSize={14} href={info.url} isExternal>
+						{formatUrlForDisplay(info.url)}
 						<ExternalLinkIcon mx="2px" />
 					</Link>
+				) : undefined}
+				<Flex>
 					{info.qStatus == constants.QUERY_STATUS.FOUND ? (
 						<Link
 							fontSize={12}
+							fontWeight="semibold"
 							href={`${webUrl}/post/${info.marketIdentifier}`}
 							isExternal
 						>
-							{"Challenge"}
+							{"View on COCO"}
 							<ExternalLinkIcon mx="2px" />
 						</Link>
 					) : (
 						<Link
 							fontSize={12}
+							fontWeight="semibold"
 							href={`${webUrl}/new/${encodeURIComponent(
 								info.url
 							)}`}
@@ -278,32 +290,75 @@ function Page() {
 						</Link>
 					)}
 					<Spacer />
-					<Text>Status</Text>
+					{onChainData.outcome ? (
+						<Tag
+							size={"sm"}
+							variant="solid"
+							colorScheme={
+								onChainData.outcome == 1 ? "green" : "red"
+							}
+						>
+							{onChainData.outcome == 1 ? "YES" : "NO"}
+						</Tag>
+					) : undefined}
 				</Flex>
 			</Flex>
 		);
 	}
 
 	return (
-		<Flex flexDirection={"column"} width={"100%"} marginTop={2}>
+		<Flex
+			flexDirection={"column"}
+			width={"100%"}
+			marginTop={2}
+			marginBottom={2}
+		>
 			{activeTabInfo != undefined ? (
 				<>
-					<Text>Active webpage</Text>
+					<Text
+						fontSize={14}
+						marginBottom={1}
+						fontWeight={"semibold"}
+					>
+						Active webpage
+					</Text>
 					<UrlBox info={activeTabInfo} />
 				</>
 			) : undefined}
-			<Text>Found other links</Text>
+			<Text marginBottom={1} fontSize={14} fontWeight={"semibold"}>
+				Other links found
+			</Text>
 			{Object.values(foundUrlsWithInfo).map((info, index) => {
 				return <UrlBox key={index} info={info} />;
 			})}
-			<Flex>
-				<Text>Not found links</Text>
+			{Object.values(foundUrlsWithInfo).length == 0 ? (
+				<Flex justifyContent={"center"}>
+					<Text fontSize={14}>Nothing to show</Text>
+				</Flex>
+			) : undefined}
+			<Flex marginBottom={1}>
+				<Text fontSize={14} fontWeight={"semibold"}>
+					Other links not found
+				</Text>
 				<Spacer />
-				<Text>Show toggle</Text>
+				<Switch
+					value={showNotFound}
+					onChange={(e) => {
+						setShowNotFound(e.target.checked);
+					}}
+				/>
 			</Flex>
-			{Object.values(notFoundUrlsWithInfo).map((info, index) => {
-				return <UrlBox key={index} info={info} />;
-			})}
+			{showNotFound == true
+				? Object.values(notFoundUrlsWithInfo).map((info, index) => {
+						return <UrlBox key={index} info={info} />;
+				  })
+				: undefined}
+			{showNotFound == true &&
+			Object.values(notFoundUrlsWithInfo).length == 0 ? (
+				<Flex justifyContent={"center"}>
+					<Text fontSize={14}>Nothing to show</Text>
+				</Flex>
+			) : undefined}
 		</Flex>
 	);
 }
