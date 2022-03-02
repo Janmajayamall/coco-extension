@@ -10,8 +10,8 @@ import {
 	formatUrlForDisplay,
 	formatOnChainData,
 	observeLinkChanges,
-	getDataFromGoogleSearch,
-	getUrlType,
+	findDataFromGoogleSearch,
+	findUrlType,
 } from "./../../utils";
 import { ReactReduxContext, useDispatch, useSelector } from "react-redux";
 import {
@@ -58,7 +58,7 @@ function Page() {
 						activeTab: {
 							tabId: tab.id,
 							tabUrl: tab.url,
-							tabType: getUrlType(tab.url),
+							tabType: findUrlType(tab.url),
 							tabInfo: undefined,
 						},
 					})
@@ -144,7 +144,7 @@ function Page() {
 			if (activeTab.tabType == constants.ACTIVE_TAB_TYPES.GOOGLE_SEARCH) {
 				chrome.scripting.executeScript({
 					target: { tabId: activeTab.tabId },
-					function: getDataFromGoogleSearch,
+					function: findDataFromGoogleSearch,
 				});
 			}
 

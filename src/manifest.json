@@ -17,5 +17,12 @@
 		"48": "icon48.png",
 		"128": "icon128.png"
 	},
-	"permissions": ["activeTab", "tabs", "storage", "scripting"]
+	"permissions": ["activeTab", "tabs", "storage", "scripting"],
+	"content_scripts": [
+		{
+			"matches": ["https://*.google.com/search*"],
+			"css": ["content-style.css"],
+			"js": ["content.bundle.js"]
+		}
+	]
 }

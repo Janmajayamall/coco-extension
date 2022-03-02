@@ -46,7 +46,7 @@ export function formatOnChainData(onChainData) {
 	};
 }
 
-export function getUrlType(url) {
+export function findUrlType(url) {
 	// check for google search
 	if (/\b(www.google.com\/search\?)\b/.test(url)) {
 		return constants.ACTIVE_TAB_TYPES.GOOGLE_SEARCH;
@@ -95,7 +95,7 @@ const baseURL = "http://65.108.59.231:8000";
 // queries URLs info from the backend
 export async function getUrlsInfo(urlObjects) {
 	try {
-		let res = await fetch(baseURL + "/post/findUrlsInfo", {
+		let res = await fetch(baseURL + "/post/findUrlsInfoT", {
 			method: "POST", // *GET, POST, PUT, DELETE, etc.
 			mode: "cors", // no-cors, *cors, same-origin
 			headers: defaultHeaders,
@@ -163,8 +163,20 @@ export async function observeLinkChanges() {
 	// observer.disconnect();
 }
 
-// get links from google search
-export async function getDataFromGoogleSearch() {
+// execute google search script for pop up
+export async function popUpGoogleSearchScript() {
+	const urlsInfo = findDataFromGoogleSearch();
+
+	await chrome.runtime.sendMessage({
+		// constants.REQUEST_TYPES.ADD_URLS fails
+		// for some reason
+		type: "GOOGLE_DOM_INFO",
+		info: urlsInfo,
+	});
+}
+
+// find links from google search
+export function findDataFromGoogleSearch() {
 	let res = [];
 
 	// find all normal search info
@@ -178,8 +190,12 @@ export async function getDataFromGoogleSearch() {
 
 		res.push({
 			url,
-			googleTitle,
-			tabType: "GOOGLE_SEARCH",
+			clientMetadata: {
+				tabType: "GOOGLE_SEARCH",
+				googleTitle,
+				googleNormal: true,
+				googleNews: false,
+			},
 		});
 	}
 
@@ -194,15 +210,14 @@ export async function getDataFromGoogleSearch() {
 
 		res.push({
 			url,
-			googleTitle,
-			tabType: "GOOGLE_SEARCH",
+			clientMetadata: {
+				tabType: "GOOGLE_SEARCH",
+				googleTitle,
+				googleNormal: false,
+				googleNews: true,
+			},
 		});
 	}
 
-	await chrome.runtime.sendMessage({
-		// constants.REQUEST_TYPES.ADD_URLS fails
-		// for some reason
-		type: "GOOGLE_DOM_INFO",
-		info: res,
-	});
+	return res;
 }
