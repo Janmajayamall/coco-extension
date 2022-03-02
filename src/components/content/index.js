@@ -62,7 +62,6 @@ async function handleGoogleSearchTab() {
 			info.clientMetadata.tabType ==
 				constants.ACTIVE_TAB_TYPES.GOOGLE_SEARCH
 		) {
-			console.log(info, " just for the sake");
 			if (info.clientMetadata.googleNews == true) {
 				// handle news link
 				let element = document.body.querySelector(

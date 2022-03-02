@@ -1,9 +1,10 @@
 export const constants = {
 	COLORS: { PRIMARY: "#FFFFFF" },
 	REQUEST_TYPES: {
-		ADD_URLS: "ADD_URLS",
+		POPUP_ADD_URLS: "POPUP_ADD_URLS",
 		DOM_LINKS: "DOM_LINKS",
 		GOOGLE_DOM_INFO: "GOOGLE_DOM_INFO",
+		POPUP_GOOGLE_URLS: "POPUP_GOOGLE_URLS",
 	},
 	STORAGE_KEYS: {
 		URLS: "URLS",
@@ -20,10 +21,17 @@ export const constants = {
 	ACTIVE_TAB_TYPES: {
 		NONE: "NONE",
 		GOOGLE_SEARCH: "GOOGLE_SEARCH",
+		RANDOM_TAB: "RANDOM_TAB", // random tab is when on only active tab info is shown
 	},
 };
 
 export const webUrl = "http://65.108.59.231:3000";
+
+export function findUrlName(url) {
+	let tmp = document.createElement("a");
+	tmp.setAttribute("href", url);
+	return tmp.hostname;
+}
 
 export function formatUrlForDisplay(url) {
 	if (url.length > constants.URL_DISPLAY_LENGTH) {
@@ -52,7 +60,7 @@ export function findUrlType(url) {
 		return constants.ACTIVE_TAB_TYPES.GOOGLE_SEARCH;
 	}
 
-	return constants.ACTIVE_TAB_TYPES.NONE;
+	return constants.ACTIVE_TAB_TYPES.RANDOM_TAB;
 }
 
 // Filter for links that
@@ -116,7 +124,6 @@ async function getCurrentTab() {
 
 // finds all links in DOM
 export async function findAllDOMLinks() {
-	console.log(" Yo I rsioawjdaoisjoceived :P");
 	var links = document.getElementsByTagName("a");
 	let urls = [];
 	for (var i = 0; i < links.length; i++) {
@@ -165,8 +172,9 @@ export async function observeLinkChanges() {
 
 // execute google search script for pop up
 export async function popUpGoogleSearchScript() {
+	conole.log(urlsInfo, " popUpGoogleSearchScript 1");
 	const urlsInfo = findDataFromGoogleSearch();
-
+	conole.log(urlsInfo, " popUpGoogleSearchScript");
 	await chrome.runtime.sendMessage({
 		// constants.REQUEST_TYPES.ADD_URLS fails
 		// for some reason

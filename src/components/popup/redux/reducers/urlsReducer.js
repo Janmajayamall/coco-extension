@@ -7,11 +7,11 @@ const initialState = {
 	notFoundUrlsWithInfo: new Object(),
 	urlsInfoToDisplay: new Object(),
 	activeTab: {
-		tabInfo: undefined,
 		tabUrl: undefined,
 		tabId: undefined,
 		tabType: "NONE",
 	},
+	activeTabInfo: undefined,
 };
 
 const slice = createSlice({
@@ -21,6 +21,11 @@ const slice = createSlice({
 		sUpdateActiveTab(state, action) {
 			state.activeTab = {
 				...action.payload.activeTab,
+			};
+		},
+		sUpdateActiveTabInfo(state, action) {
+			state.activeTabInfo = {
+				...action.payload.activeTabInfo,
 			};
 		},
 		sUpdateUrlsInfoToDisplay(state, action) {
@@ -80,9 +85,11 @@ export const {
 	sUpdateUrlsWithInfo,
 	sClearUrlsWithInfo,
 	sUpdateUrlsInfoToDisplay,
+	sUpdateActiveTabInfo,
 } = slice.actions;
 
 export const selectActiveTab = (state) => state.urls.activeTab;
+export const selectActiveTabInfo = (state) => state.urls.activeTabInfo;
 export const selectFoundUrlsWithInfo = (state) => state.urls.foundUrlsWithInfo;
 export const selectNotFoundUrlsWithInfo = (state) =>
 	state.urls.notFoundUrlsWithInfo;

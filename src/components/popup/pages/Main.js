@@ -10,8 +10,9 @@ import {
 	formatUrlForDisplay,
 	formatOnChainData,
 	observeLinkChanges,
-	findDataFromGoogleSearch,
+	popUpGoogleSearchScript,
 	findUrlType,
+	findUrlName,
 } from "./../../utils";
 import { ReactReduxContext, useDispatch, useSelector } from "react-redux";
 import {
@@ -23,6 +24,8 @@ import {
 	sUpdateActiveTab,
 	sUpdateUrlsInfoToDisplay,
 	sUpdateUrlsWithInfo,
+	sUpdateActiveTabInfo,
+	selectActiveTabInfo,
 } from "../redux/reducers";
 
 function Page() {
@@ -33,6 +36,7 @@ function Page() {
 	// const activeTabInfo = useSelector(selectActiveTabInfo);
 
 	const activeTab = useSelector(selectActiveTab);
+	const activeTabInfo = useSelector(selectActiveTabInfo);
 	const foundUrlsWithInfo = useSelector(selectFoundUrlsWithInfo);
 	const notFoundUrlsWithInfo = useSelector(selectNotFoundUrlsWithInfo);
 	const urlsInfoToDisplay = useSelector(selectUrlsInfoToDisplay);
@@ -59,7 +63,6 @@ function Page() {
 							tabId: tab.id,
 							tabUrl: tab.url,
 							tabType: findUrlType(tab.url),
-							tabInfo: undefined,
 						},
 					})
 				);
@@ -78,27 +81,12 @@ function Page() {
 					activeTab: {
 						tabId: tab.id,
 						tabUrl: tab.url,
-						tabType: getUrlType(tab.url),
-						tabInfo: undefined,
+						tabType: findUrlType(tab.url),
 					},
 				})
 			);
 		}
 	}, []);
-
-	// TODO - remove this is just for testing
-	// useEffect(() => {
-	// 	console.log(
-	// 		Object.keys(notFoundUrlsWithInfo).length,
-	// 		Object.keys(foundUrlsWithInfo).length,
-	// 		" URLS with info length"
-	// 	);
-	// }, [notFoundUrlsWithInfo, foundUrlsWithInfo]);
-
-	// // TODO - remove this is just for testing
-	// useEffect(() => {
-	// 	console.log(" Active tab update ", activeTabId, activeTabUrl);
-	// }, [activeTabId, activeTabUrl]);
 
 	useEffect(() => {
 		// listen for messages
@@ -107,19 +95,13 @@ function Page() {
 			sender,
 			sendResponse
 		) {
+			console.log("received request", request);
 			if (request) {
-				if (request.type == constants.REQUEST_TYPES.ADD_URLS) {
-					if (true) {
-						console.log(request.urls, " received urls");
-						const urls = filterUrls(request.urls);
-
-						await addUrls(urls);
+				if (request.type == constants.REQUEST_TYPES.POPUP_ADD_URLS) {
+					if (request.urlsObjs) {
+						// add urls for display
+						await addUrls(request.urlsObjs);
 					}
-				}
-
-				if (request.type == constants.REQUEST_TYPES.GOOGLE_DOM_INFO) {
-					console.log("received dom info", request.info);
-					await addUrls(request.info);
 				}
 			}
 		});
@@ -130,6 +112,7 @@ function Page() {
 	// and add mutation observation for lin
 	useEffect(async () => {
 		dispatch(sClearUrlsWithInfo());
+
 		if (activeTab.tabUrl != undefined && activeTab.tabId != undefined) {
 			// chrome.scripting.executeScript({
 			// 	target: { tabId: activeTabId },
@@ -142,10 +125,33 @@ function Page() {
 			// });
 
 			if (activeTab.tabType == constants.ACTIVE_TAB_TYPES.GOOGLE_SEARCH) {
+				// ask for google search urls from content script
+				console.log("executing google");
 				chrome.scripting.executeScript({
 					target: { tabId: activeTab.tabId },
-					function: findDataFromGoogleSearch,
+					files: ["injectScript.bundle.js"],
 				});
+			}
+
+			if (activeTab.tabType == constants.ACTIVE_TAB_TYPES.RANDOM_TAB) {
+				// TODO filter out unecessary urls like new tab of chrome://extension
+				const res = await getUrlsInfo([
+					{
+						url: activeTab.tabUrl,
+						clientMetadata: {
+							tabType: constants.ACTIVE_TAB_TYPES.RANDOM_TAB,
+						},
+					},
+				]);
+				if (res == undefined || res.posts.length == 0) {
+					return;
+				}
+				console.log(" random res ", res);
+				dispatch(
+					sUpdateActiveTabInfo({
+						activeTabInfo: res.posts[0],
+					})
+				);
 			}
 
 			// call add URL for active tab
@@ -162,85 +168,13 @@ function Page() {
 		if (res == undefined) {
 			return;
 		}
-		let resUrlsInfo = res.posts;
+
 		// update urls to display
 		dispatch(
 			sUpdateUrlsInfoToDisplay({
-				urlsInfoToDisplay: resUrlsInfo,
+				urlsInfoToDisplay: res.posts,
 			})
 		);
-		// dispatch(
-		// 	sUpdateUrlsWithInfo({
-		// 		urlsWithInfo: resUrlsInfo,
-		// 	})
-		// );
-	}
-
-	// invalidate URLS cache every 1 min
-	// useEffect(() => {
-	// 	const interval = setInterval(async () => {
-	// 		// console.log("URLs cache invalidated");
-	// 		await invalidateURLSCache();
-	// 	}, 60000);
-	// 	return () => clearInterval(interval);
-	// }, []);
-
-	// Finds url's info and adds it to
-	// urlsWithInfo state object.
-	// It first checks whether
-	// url's info exists in URLS
-	// cache or not. If it does, then
-	// it adds url along with it's info to
-	// the state object. Otherwise,
-	// queries url's info from the
-	// backend and updates cache
-	async function _addUrls(urls) {
-		console.log(urls, " to be added urls");
-		if (urls.length == 0) {
-			return;
-		}
-
-		// get urls cache
-		const urlsInfoCache = await queryFromURLSCache();
-
-		let urlsWithCachedInfo = [];
-		let urlsToBeQueried = [];
-
-		urls.forEach((u) => {
-			if (urlsInfoCache[u] != undefined) {
-				// add to urls with info obj
-				urlsWithCachedInfo.push(urlsInfoCache[u]);
-			} else {
-				// add to urls without info arr
-				urlsToBeQueried.push(u);
-			}
-		});
-
-		// query urls without info
-		const res = await getUrlsInfo(urlsToBeQueried);
-		if (res == undefined) {
-			return;
-		}
-		let resUrlsInfo = res.posts;
-
-		// update urls cache
-		updateURLSCache(resUrlsInfo);
-
-		// update urlsWithInfo state
-		dispatch(
-			sUpdateUrlsWithInfo({
-				urlsWithInfo: resUrlsInfo,
-			})
-		);
-
-		// resUrlsInfo.forEach((info) => {
-		// 	urlsWithCachedInfo[info.url] = info;
-		// });
-
-		// setUrlsWithInfo((prevUrlsWithInfo) => ({
-		// 	...prevUrlsWithInfo,
-		// 	...urlsWithCachedInfo,
-		// }));
 	}
 
 	// queries  URLS cache
@@ -281,20 +215,20 @@ function Page() {
 		await chrome.storage.local.set(storageObj);
 	}
 
-	function UrlBox({ info }) {
-		const urlMetadata = info.urlMetadata
-			? JSON.parse(info.urlMetadata)
-			: {};
+	function StatusStrip({ info }) {
 		const onChainData = formatOnChainData(info.onChainData);
 		return (
-			<Flex
-				marginBottom={2}
-				backgroundColor={constants.COLORS.PRIMARY}
-				flexDirection={"column"}
-				padding={2}
-				borderRadius={8}
-			>
-				<Flex>
+			<Flex>
+				{info.qStatus == constants.QUERY_STATUS.FOUND &&
+				onChainData.outcome ? (
+					<Tag
+						size={"sm"}
+						variant="solid"
+						colorScheme={onChainData.outcome == 1 ? "green" : "red"}
+					>
+						{`Status: ${onChainData.outcome == 1 ? "YES" : "NO"}`}
+					</Tag>
+				) : (
 					<Tag
 						size={"sm"}
 						variant="solid"
@@ -308,27 +242,57 @@ function Page() {
 							? "Found"
 							: "Not found"}
 					</Tag>
-					<Spacer />
-				</Flex>
+				)}
+				<Spacer />
+				{info.qStatus == constants.QUERY_STATUS.FOUND ? (
+					<Link
+						fontSize={12}
+						fontWeight="semibold"
+						href={`${webUrl}/post/${info.marketIdentifier}`}
+						isExternal
+					>
+						{"View on COCO"}
+						<ExternalLinkIcon mx="2px" />
+					</Link>
+				) : (
+					<Link
+						fontSize={12}
+						fontWeight="semibold"
+						// appends googleTitle if the link to
+						// be added is from google search
+						href={`${webUrl}/new/${encodeURIComponent(info.url)}${
+							info.clientMetadata &&
+							info.clientMetadata.googleTitle
+								? "/" + info.clientMetadata.googleTitle
+								: ""
+						}`}
+						isExternal
+					>
+						{"Add to COCO"}
+						<ExternalLinkIcon mx="2px" />
+					</Link>
+				)}
+			</Flex>
+		);
+	}
 
+	function GoogleUrlBox({ info }) {
+		return (
+			<Flex
+				marginBottom={2}
+				backgroundColor={constants.COLORS.PRIMARY}
+				flexDirection={"column"}
+				padding={2}
+				borderRadius={8}
+			>
 				{/* google title is only for google search tab */}
-				{activeTab.tabType ==
-					constants.ACTIVE_TAB_TYPES.GOOGLE_SEARCH &&
-				info.googleTitle ? (
+				{info.clientMetadata.googleTitle ? (
 					<Text fontSize={14} fontWeight="semibold">
 						{info.googleTitle}
 					</Text>
 				) : undefined}
 
-				{/* only show metadata title when tab type is none */}
-				{activeTab.tabType == constants.ACTIVE_TAB_TYPES.NONE &&
-				urlMetadata.title &&
-				urlMetadata.title != "" ? (
-					<Text fontSize={14} fontWeight="semibold">
-						{urlMetadata.title}
-					</Text>
-				) : undefined}
-
+				{/* info url should always be present */}
 				{info.url ? (
 					<Link fontSize={14} href={info.url} isExternal>
 						{formatUrlForDisplay(info.url)}
@@ -336,43 +300,41 @@ function Page() {
 					</Link>
 				) : undefined}
 
-				<Flex>
-					{info.qStatus == constants.QUERY_STATUS.FOUND ? (
-						<Link
-							fontSize={12}
-							fontWeight="semibold"
-							href={`${webUrl}/post/${info.marketIdentifier}`}
-							isExternal
-						>
-							{"View on COCO"}
-							<ExternalLinkIcon mx="2px" />
-						</Link>
-					) : (
-						<Link
-							fontSize={12}
-							fontWeight="semibold"
-							href={`${webUrl}/new/${encodeURIComponent(
-								info.url
-							)}`}
-							isExternal
-						>
-							{"Add to COCO"}
-							<ExternalLinkIcon mx="2px" />
-						</Link>
-					)}
-					<Spacer />
-					{onChainData.outcome ? (
-						<Tag
-							size={"sm"}
-							variant="solid"
-							colorScheme={
-								onChainData.outcome == 1 ? "green" : "red"
-							}
-						>
-							{onChainData.outcome == 1 ? "YES" : "NO"}
-						</Tag>
-					) : undefined}
-				</Flex>
+				<StatusStrip info={info} />
+			</Flex>
+		);
+	}
+
+	function RandomUrlBox({ info }) {
+		return (
+			<Flex
+				marginBottom={2}
+				backgroundColor={constants.COLORS.PRIMARY}
+				flexDirection={"column"}
+				padding={2}
+				borderRadius={8}
+			>
+				<Link fontSize={14} href={info.url} isExternal>
+					{formatUrlForDisplay(info.url)}
+					<ExternalLinkIcon mx="2px" />
+				</Link>
+				<StatusStrip info={info} />
+			</Flex>
+		);
+	}
+
+	function ActiveHostname({ activeTabUrl }) {
+		return (
+			<Flex
+				marginBottom={2}
+				backgroundColor={constants.COLORS.PRIMARY}
+				flexDirection={"column"}
+				padding={2}
+				borderRadius={8}
+			>
+				<Text fontSize={14} fontWeight="semibold">
+					{`Active on: ${findUrlName(activeTabUrl)}`}
+				</Text>
 			</Flex>
 		);
 	}
@@ -384,6 +346,13 @@ function Page() {
 			marginTop={2}
 			marginBottom={2}
 		>
+			<ActiveHostname activeTabUrl={activeTab.tabUrl} />
+
+			{activeTab.tabType == constants.ACTIVE_TAB_TYPES.RANDOM_TAB &&
+			activeTabInfo ? (
+				<RandomUrlBox info={activeTabInfo} />
+			) : undefined}
+
 			{/* {activeTabInfo != undefined ? (
 				<>
 					<Text
@@ -430,14 +399,18 @@ function Page() {
 					<Text fontSize={14}>Nothing to show</Text>
 				</Flex>
 			) : undefined} */}
-			{Object.values(urlsInfoToDisplay).length == 0 ? (
+
+			{/* {activeTab.tabType == constants.ACTIVE_TAB_TYPES.GOOGLE_SEARCH &&
+			Object.values(urlsInfoToDisplay).length == 0 ? (
 				<Flex justifyContent={"center"}>
 					<Text fontSize={14}>Nothing to show</Text>
 				</Flex>
-			) : undefined}
-			{Object.values(urlsInfoToDisplay).map((info, index) => {
-				return <UrlBox key={index} info={info} />;
-			})}
+			) : undefined} */}
+			{activeTab.tabType == constants.ACTIVE_TAB_TYPES.GOOGLE_SEARCH
+				? Object.values(urlsInfoToDisplay).map((info, index) => {
+						return <GoogleUrlBox key={index} info={info} />;
+				  })
+				: undefined}
 		</Flex>
 	);
 }

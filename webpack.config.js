@@ -49,6 +49,13 @@ var options = {
 			"content",
 			"index.js"
 		),
+		injectScript: path.join(
+			__dirname,
+			"src",
+			"components",
+			"content",
+			"injectScript.js"
+		),
 	},
 	output: {
 		filename: "[name].bundle.js",
