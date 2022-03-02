@@ -20,7 +20,10 @@
 	"permissions": ["activeTab", "tabs", "storage", "scripting"],
 	"content_scripts": [
 		{
-			"matches": ["https://*.google.com/search*"],
+			"matches": [
+				"https://*.google.com/search*",
+				"https://twitter.com/*"
+			],
 			"css": ["content-style.css"],
 			"js": ["content.bundle.js"]
 		}

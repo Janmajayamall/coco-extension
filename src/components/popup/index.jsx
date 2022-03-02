@@ -8,12 +8,14 @@ import { mode } from "@chakra-ui/theme-tools";
 import { store } from "./redux/store";
 import { Provider } from "react-redux";
 
+
 // chakra ui theme
 const theme = extendTheme({
 	styles: {
 		global: (props) => ({
 			body: {
 				bg: mode("#edf2f7", "#edf2f7")(props),
+				
 			},
 		}),
 	},

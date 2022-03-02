@@ -263,7 +263,10 @@ function Page() {
 						href={`${webUrl}/new/${encodeURIComponent(info.url)}${
 							info.clientMetadata &&
 							info.clientMetadata.googleTitle
-								? "/" + info.clientMetadata.googleTitle
+								? "/" +
+								  encodeURIComponent(
+										info.clientMetadata.googleTitle
+								  )
 								: ""
 						}`}
 						isExternal
