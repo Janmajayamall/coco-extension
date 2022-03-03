@@ -11,11 +11,23 @@ function GoogleSearchStrip({ info }) {
 		</Flex>
 	);
 }
+function TwitterCard() {
+	return <div>he</div>;
+}
 
 export function renderReact(elementId, info) {
 	ReactDOM.render(
 		<React.StrictMode>
 			<GoogleSearchStrip info={info} />
+		</React.StrictMode>,
+		document.getElementById(elementId)
+	);
+}
+
+export function renderTwitterCard(elementId) {
+	ReactDOM.render(
+		<React.StrictMode>
+			<TwitterCard />
 		</React.StrictMode>,
 		document.getElementById(elementId)
 	);

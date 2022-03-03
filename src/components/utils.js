@@ -94,6 +94,7 @@ export function filterUrls(urls) {
 	});
 }
 
+
 const defaultHeaders = {
 	"Content-Type": "application/json",
 };
