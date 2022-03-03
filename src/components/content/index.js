@@ -1,3 +1,4 @@
+import { StylesProvider } from "@chakra-ui/react";
 import {
 	constants,
 	findDataFromGoogleSearch,
@@ -137,12 +138,15 @@ async function handleGoogleSearchTab() {
 
 function twitterInsert(parent, urls) {
 	console.log("CJ urls recieved", urls, parent);
-	let mainDiv = document.createElement("div");
 
-	let rootId = getRandomId();
-	mainDiv.id = rootId;
-	parent.appendChild(mainDiv);
-	renderTwitterCard(rootId);
+	// add rootSpan to parent
+	let rootSpan = document.createElement("span");
+	parent.appendChild(rootSpan);
+
+	// attach shadow to root span
+	rootSpan.attachShadow({ mode: "open" });
+
+	renderTwitterCard(rootSpan, urls);
 }
 
 // starts observing DOM Link changes

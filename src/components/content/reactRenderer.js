@@ -1,6 +1,21 @@
 import reactDom from "@hot-loader/react-dom";
 import React from "react";
 import ReactDOM from "react-dom";
+import {
+	ChakraProvider,
+	Text,
+	Flex,
+	Popover,
+	PopoverTrigger,
+	Button,
+	Portal,
+	PopoverContent,
+	PopoverHeader,
+	PopoverCloseButton,
+	PopoverBody,
+	PopoverFooter,
+	PopoverArrow,
+} from "@chakra-ui/react";
 
 function GoogleSearchStrip({ info }) {
 	return (
@@ -11,8 +26,24 @@ function GoogleSearchStrip({ info }) {
 		</Flex>
 	);
 }
-function TwitterCard() {
-	return <div>he</div>;
+function TwitterCard({ urls }) {
+	return (
+		<Flex>
+			<Popover>
+				<PopoverTrigger>
+					<Text>COCO</Text>
+				</PopoverTrigger>
+
+				<PopoverContent>
+					<Flex flexDirection={"column"}>
+						{urls.map((u) => {
+							return <Text>{u}</Text>;
+						})}
+					</Flex>
+				</PopoverContent>
+			</Popover>
+		</Flex>
+	);
 }
 
 export function renderReact(elementId, info) {
@@ -24,11 +55,13 @@ export function renderReact(elementId, info) {
 	);
 }
 
-export function renderTwitterCard(elementId) {
+export function renderTwitterCard(rootSpan, urls) {
 	ReactDOM.render(
 		<React.StrictMode>
-			<TwitterCard />
+			<ChakraProvider>
+				<TwitterCard urls={urls} />
+			</ChakraProvider>
 		</React.StrictMode>,
-		document.getElementById(elementId)
+		rootSpan.shadowRoot
 	);
 }
