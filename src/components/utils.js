@@ -23,6 +23,12 @@ export const constants = {
 		GOOGLE_SEARCH: "GOOGLE_SEARCH",
 		RANDOM_TAB: "RANDOM_TAB", // random tab is when on only active tab info is shown
 	},
+	// Char count for display
+	CHAR_COUNTS: {
+		URL_TITLE: 110,
+		URL_DESCRIPTION: 200,
+		URL: 100,
+	},
 };
 
 export const webUrl = "http://65.108.59.231:3000";
@@ -33,11 +39,11 @@ export function findUrlName(url) {
 	return tmp.hostname;
 }
 
-export function formatUrlForDisplay(url) {
-	if (url.length > constants.URL_DISPLAY_LENGTH) {
-		return url.substring(0, constants.URL_DISPLAY_LENGTH - 3) + "...";
+export function truncateStrToLength(str, length) {
+	if (str.length <= length) {
+		return str;
 	}
-	return url;
+	return str.substring(0, length - 3) + "...";
 }
 
 export function formatOnChainData(onChainData) {

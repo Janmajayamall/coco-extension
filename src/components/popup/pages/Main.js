@@ -7,7 +7,7 @@ import {
 	getUrlsInfo,
 	findAllDOMLinks,
 	webUrl,
-	formatUrlForDisplay,
+	truncateStrToLength,
 	formatOnChainData,
 	observeLinkChanges,
 	popUpGoogleSearchScript,
@@ -298,7 +298,10 @@ function Page() {
 				{/* info url should always be present */}
 				{info.url ? (
 					<Link fontSize={14} href={info.url} isExternal>
-						{formatUrlForDisplay(info.url)}
+						{truncateStrToLength(
+							info.url,
+							constants.CHAR_COUNTS.URL
+						)}
 						<ExternalLinkIcon mx="2px" />
 					</Link>
 				) : undefined}
@@ -318,7 +321,7 @@ function Page() {
 				borderRadius={8}
 			>
 				<Link fontSize={14} href={info.url} isExternal>
-					{formatUrlForDisplay(info.url)}
+					{truncateStrToLength(info.url, constants.CHAR_COUNTS.URL)}
 					<ExternalLinkIcon mx="2px" />
 				</Link>
 				<StatusStrip info={info} />
