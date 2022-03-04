@@ -7,6 +7,49 @@ import {
 } from "../utils";
 import { renderReact, renderTwitterCard } from "./reactRenderer";
 
+let f = {
+	url: "https://t.co/7UZ5k3rBYP",
+	metdata: {
+		twitterTitle:
+			"YouTube Won't Distinguish Between Misinformation and Reporting, So It Suspended My Channel",
+		twitterCard: "summary_large_image",
+		twitterCreator: "@reason",
+		articleTag: "Election 2020",
+		articleSection: "Posts",
+		ogLocale: "en_US",
+		ogType: "article",
+		ogTitle:
+			"YouTube Won’t Distinguish Between Misinformation and Reporting, So It Suspended My Channel",
+		ogDescription:
+			"The platform punished <em>The Hill</em>'s morning show, <em>Rising</em>, for showing a clip of Trump speaking.",
+		ogUrl: "https://reason.com/2022/03/03/youtube-rising-the-hill-election-misinformation-suspension/",
+		ogSiteName: "Reason.com",
+		articlePublisher: "https://facebook.com/Reason.Magazine",
+		articlePublishedTime: "2022-03-03T22:57:26+00:00",
+		articleModifiedTime: "2022-03-03T23:10:05+00:00",
+		twitterDescription:
+			"The platform punished <em>The Hill</em>'s morning show, <em>Rising</em>, for showing a clip of Trump speaking.",
+		twitterSite: "@reason",
+		ogImage: {
+			url: "https://d2eehagpk5cl65.cloudfront.net/img/q60/uploads/2022/03/dreamstime_m_124580075-1024x684.jpg",
+			width: "1024",
+			height: "684",
+			type: "image/jpeg",
+		},
+		twitterImage: {
+			url: "https://reason.com/wp-content/uploads/2022/03/dreamstime_m_124580075-1200x630.jpg",
+			width: null,
+			height: null,
+			alt: null,
+		},
+		ogDate: "2022-03-03T17:57:26-05:00",
+		favicon:
+			"https://d2eehagpk5cl65.cloudfront.net/wp-content/themes/reason-dot-com-theme/dist/images/favicon/android-icon-192x192_5c5b801e.png",
+	},
+	qStatus: "NOT_FOUND",
+};
+
+
 function getRandomId() {
 	return `coco_${Math.floor(Math.random() * 10000000)}`;
 }
@@ -137,8 +180,6 @@ async function handleGoogleSearchTab() {
 // }
 
 function twitterInsert(parent, urls) {
-	console.log("CJ urls recieved", urls, parent);
-
 	// add rootSpan to parent
 	let rootSpan = document.createElement("span");
 	parent.appendChild(rootSpan);
@@ -171,7 +212,6 @@ export function obb() {
 					card.getAttribute("data-testid") == "tweet" &&
 					!card.hasAttribute("coco-scan")
 				) {
-					console.log("CJ ", "I was trigg");
 					card.setAttribute("coco-scan", true);
 					// var link = card.getElementsByTagName("a");
 					// for (let j = 0; j < link.length; j++) {
@@ -182,11 +222,11 @@ export function obb() {
 
 					// find the urls
 					var link = card.getElementsByTagName("a");
-					let urls = [];
+					let urls = {};
 					for (let j = 0; j < link.length; j++) {
 						let reg = /https:\/\/+t.co\//;
 						if (reg.test(link[j].href)) {
-							urls.push(link[j].href);
+							urls[link[j].href] = true;
 						}
 					}
 
@@ -197,7 +237,7 @@ export function obb() {
 						return;
 					}
 
-					twitterInsert(strip, urls);
+					twitterInsert(strip, Object.keys(urls));
 				}
 			}
 		});

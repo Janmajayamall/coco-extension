@@ -1,5 +1,5 @@
 import reactDom from "@hot-loader/react-dom";
-import React from "react";
+import React, { useEffect, useState } from "react";
 import ReactDOM from "react-dom";
 import {
 	ChakraProvider,
@@ -15,7 +15,9 @@ import {
 	PopoverBody,
 	PopoverFooter,
 	PopoverArrow,
+	Spinner,
 } from "@chakra-ui/react";
+import { getUrlsInfo } from "../utils";
 
 function GoogleSearchStrip({ info }) {
 	return (
@@ -26,23 +28,76 @@ function GoogleSearchStrip({ info }) {
 		</Flex>
 	);
 }
-function TwitterCard({ urls }) {
-	return (
-		<Flex>
-			<Popover>
-				<PopoverTrigger>
-					<Text>COCO</Text>
-				</PopoverTrigger>
 
-				<PopoverContent>
-					<Flex flexDirection={"column"}>
-						{urls.map((u) => {
-							return <Text>{u}</Text>;
+function twitterMetadata(info) {
+	let final = {};
+
+	let metadata = info.metadata;
+	if (metadata.twitterTitle != undefined) {
+		final.title = metadata.twitterTitle;
+	} else if (metadata.ogTitle != undefined) {
+		final.title = ogTitle;
+	}
+
+	if (metadata.twitterDescription != undefined) {
+		final.description = metadata.twitterDescription;
+	} else if (metadata.ogDescription != undefined) {
+		final.description = metadata.ogDescription;
+	}
+
+	if (metadata.twitterImage != undefined) {
+		final.imageUrl = metadata.twitterImage.url;
+	} else if (metadata.ogTitle != undefined) {
+		final.imageUrl = metadata.ogImage.url;
+	}
+
+	final.url = info.url;
+
+	return final;
+}
+
+function TwitterCard({ urls }) {
+	const [urlsInfo, setUrlsInfo] = useState([]);
+
+	const [loading, setLoading] = useState(false);
+
+	async function urlsInfoHelper() {
+		if (urls.length == 0 || urlsInfo.length != 0) {
+			return;
+		}
+		setLoading(true);
+		const res = await getUrlsInfo(urls);
+		if (res == undefined) {
+			return;
+		}
+		setUrlsInfo(res.urlsInfo);
+		setLoading(false);
+	}
+
+	return (
+		<Popover onOpen={urlsInfoHelper} isLazy={true}>
+			<PopoverTrigger>
+				<Text>COCO</Text>
+			</PopoverTrigger>
+
+			<Portal>
+				<PopoverContent background={"white"}>
+					<Flex background={"white"} flexDirection={"column"}>
+						{urlsInfo.length == 0 ? <Spinner /> : undefined}
+						<Text>Content</Text>
+						{urlsInfo.map((info) => {
+							const twitterData = twitterMetadata(info);
+							return (
+								<Flex flexDirection={"column"}>
+									<Text>{twitterData.title}</Text>
+									<Text>{twitterData.description}</Text>
+								</Flex>
+							);
 						})}
 					</Flex>
 				</PopoverContent>
-			</Popover>
-		</Flex>
+			</Portal>
+		</Popover>
 	);
 }
 

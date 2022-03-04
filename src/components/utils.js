@@ -94,22 +94,21 @@ export function filterUrls(urls) {
 	});
 }
 
-
 const defaultHeaders = {
 	"Content-Type": "application/json",
 };
 
-const baseURL = "http://65.108.59.231:8000";
+const baseURL = "http://localhost:8000";
 
 // queries URLs info from the backend
-export async function getUrlsInfo(urlObjects) {
+export async function getUrlsInfo(urls) {
 	try {
-		let res = await fetch(baseURL + "/post/findUrlsInfoT", {
+		let res = await fetch(baseURL + "/post/findUrlsInfo", {
 			method: "POST", // *GET, POST, PUT, DELETE, etc.
 			mode: "cors", // no-cors, *cors, same-origin
 			headers: defaultHeaders,
 			body: JSON.stringify({
-				urlObjects,
+				urls,
 			}),
 		});
 		res = await res.json();
