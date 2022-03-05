@@ -7,49 +7,8 @@ import {
 } from "../utils";
 import { renderGoogle, renderTwitter, setupShadowRoot } from "./reactRenderer";
 
-function buildGoogleDivForInfo(info) {
-	// create COCO section
-	let parentDiv = document.createElement("div");
-	let rootId = getRandomId();
-	// parentDiv.id = parentDiv.className = "cocoParentDiv";
-	parentDiv.id = rootId;
-
-	// if (info.qStatus == constants.QUERY_STATUS.FOUND) {
-	// 	// status text
-	// 	let statusText = document.createElement("div");
-	// 	statusText.innerHTML = `Status : ${
-	// 		info.onChainData.outcome == 1 ? "YES" : "NO"
-	// 	}`;
-
-	// 	// COCO link
-	// 	let visitLink = document.createElement("a");
-	// 	visitLink.innerHTML = "View on COCO";
-	// 	visitLink.href = `${webUrl}/post/${info.marketIdentifier}`;
-	// 	visitLink.target = "_blank";
-
-	// 	parentDiv.appendChild(statusText);
-	// 	parentDiv.appendChild(visitLink);
-	// } else {
-	// 	// status text
-	// 	let statusText = document.createElement("div");
-	// 	statusText.innerHTML = "Not Found";
-	// 	// COCO link
-	// 	let addLink = document.createElement("a");
-	// 	addLink.innerHTML = "Add on COCO";
-	// 	addLink.href = `${webUrl}/new/${encodeURIComponent(
-	// 		info.url
-	// 	)}/${encodeURIComponent(info.clientMetadata.googleTitle)}`;
-	// 	addLink.target = "_blank";
-
-	// 	parentDiv.appendChild(statusText);
-	// 	parentDiv.appendChild(addLink);
-	// }
-
-	return parentDiv;
-}
-
 async function handleGoogleSearch() {
-	console.log(window.location, " is this google/ ");
+	console.log(window.location.hostname, " is this google/ ");
 
 	// normal search divs
 	var divs = document.getElementsByClassName("yuRUbf");
@@ -67,73 +26,29 @@ async function handleGoogleSearch() {
 		renderGoogle(rootSpan.shadowRoot, [url]);
 	}
 
-	// // find all google news info
-	// var newsDivs = document.getElementsByClassName("ftSUBd");
-	// for (var i = 0; i < newsDivs.length; i++) {
-	// 	// get link and title
-	// 	const url = newsDivs[i].getElementsByTagName("a")[0].href;
-	// 	const googleTitle = newsDivs[i].getElementsByClassName(
-	// 		"mCBkyc y355M JQe2Ld nDgy9d"
-	// 	)[0].innerHTML;
+	// google news a
+	// className is <a> elem
+	var a = document.getElementsByClassName("WlydOe");
+	for (var i = 0; i < a.length; i++) {
+		// get link and title
+		let url = a[i].href;
 
-	// 	res.push({
-	// 		url,
-	// 		clientMetadata: {
-	// 			tabType: "GOOGLE_SEARCH",
-	// 			googleTitle,
-	// 			googleNormal: false,
-	// 			googleNews: true,
-	// 		},
-	// 	});
-	// }
+		// add coco's shadow DOM
+		let rootSpan = document.createElement("span");
+		if (a[i].children[0].children.length == 1) {
+			// case - when there's no image on right
+			a[i].children[0].children[0].appendChild(rootSpan);
+		} else {
+			// case - when there's an image on right
+			a[i].children[0].children[1].appendChild(rootSpan);
+		}
 
-	// return res;
+		// setup shadow root
+		rootSpan.attachShadow({ mode: "open" });
+		setupShadowRoot(rootSpan.shadowRoot);
 
-	// const urlsObjs = findDataFromGoogleSearch();
-
-	// // get urls info from backend
-	// const res = await getUrlsInfo(urlsObjs);
-	// if (res == undefined) {
-	// 	return;
-	// }
-	// let resUrlsInfo = res.posts;
-
-	// // update DOM to reflect urls info
-	// resUrlsInfo.forEach((info) => {
-	// 	if (
-	// 		info.clientMetadata &&
-	// 		info.clientMetadata.tabType ==
-	// 			constants.ACTIVE_TAB_TYPES.GOOGLE_SEARCH
-	// 	) {
-	// 		if (info.clientMetadata.googleNews == true) {
-	// 			// handle news link
-	// 			let element = document.body.querySelector(
-	// 				`[href="${info.url}"]`
-	// 			);
-
-	// 			let parentDiv = document.createElement("div");
-	// 			let rootId = getRandomId();
-	// 			parentDiv.id = rootId;
-
-	// 			element.appendChild(parentDiv);
-	// 			renderReact(rootId, info);
-	// 		} else if (info.clientMetadata.googleNormal == true) {
-	// 			// handle normal search link
-	// 			let element = document.body.querySelector(
-	// 				`[href="${info.url}"]`
-	// 			);
-	// 			let mainParent =
-	// 				element.parentElement.parentElement.parentElement;
-
-	// 			let parentDiv = document.createElement("div");
-	// 			let rootId = getRandomId();
-	// 			parentDiv.id = rootId;
-
-	// 			mainParent.appendChild(parentDiv);
-	// 			renderReact(rootId, info);
-	// 		}
-	// 	}
-	// });
+		renderGoogle(rootSpan.shadowRoot, [url]);
+	}
 }
 
 export function handleTwitter() {
