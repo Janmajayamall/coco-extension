@@ -17,14 +17,13 @@
 		"48": "icon48.png",
 		"128": "icon128.png"
 	},
-	"permissions": ["activeTab", "tabs", "storage", "scripting"],
+	"permissions": ["activeTab", "tabs"],
 	"content_scripts": [
 		{
 			"matches": [
 				"https://*.google.com/search*",
 				"https://twitter.com/*"
 			],
-			"css": ["content-style.css"],
 			"js": ["content.bundle.js"]
 		}
 	]

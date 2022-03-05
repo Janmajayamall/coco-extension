@@ -18,10 +18,11 @@ export const constants = {
 		YES: "YES",
 		NO: "NOs",
 	},
-	ACTIVE_TAB_TYPES: {
+	URL_TYPES: {
 		NONE: "NONE",
 		GOOGLE_SEARCH: "GOOGLE_SEARCH",
-		RANDOM_TAB: "RANDOM_TAB", // random tab is when on only active tab info is shown
+		TWITTER: "TWITTER",
+		RANDOM: "RANDOM",
 	},
 	// Char count for display
 	CHAR_COUNTS: {
@@ -40,6 +41,10 @@ export function findUrlName(url) {
 }
 
 export function truncateStrToLength(str, length) {
+	if (str == undefined) {
+		return;
+	}
+
 	if (str.length <= length) {
 		return str;
 	}
@@ -61,38 +66,26 @@ export function formatOnChainData(onChainData) {
 }
 
 export function findUrlType(url) {
-	// check for google search
-	if (/\b(www.google.com\/search\?)\b/.test(url)) {
-		return constants.ACTIVE_TAB_TYPES.GOOGLE_SEARCH;
+	// google search
+	if (/https:\/\/(www.)?google.co(m)?\/search/.test(url)) {
+		return constants.URL_TYPES.GOOGLE_SEARCH;
 	}
 
-	return constants.ACTIVE_TAB_TYPES.RANDOM_TAB;
+	// twitter
+	if (/https:\/\/(www.)?twitter.co(m)?/.test(url)) {
+		return constants.URL_TYPES.TWITTER;
+	}
+
+	return constants.URL_TYPES.RANDOM;
 }
 
 // Filter for links that
 // should not be checked.
-// Ex, the ones containing with news.hacker
-// or Google.com and other such pattern
+// ex. chrome://
 export function filterUrls(urls) {
 	return urls.filter((val) => {
-		// check that val is valid url
-		let reg =
-			/https?:\/\/(www\.)?[-a-zA-Z0-9@:%._\+~#=]{1,256}\.[a-zA-Z0-9()]{1,6}\b([-a-zA-Z0-9()@:%_\+.~#?&//=]*)/;
-		if (!reg.test(val)) {
-			return false;
-		}
-
-		// check URL isn't subdomain of google
-		reg =
-			/\b(google\.com|news\.ycombinator\.com|youtube\.com|googleadservices\.com)\b/;
-		if (reg.test(val)) {
-			return false;
-		}
-
-		// Filter out all links with more than 100 characters.
-		// Links having more than 100 chars are in most cases
-		// used for ads or something irrelevant purpose
-		if (val.length > 200) {
+		// check chrome browser urls
+		if (/chrome.*:\/\/*/.test(val)) {
 			return false;
 		}
 
@@ -106,8 +99,41 @@ const defaultHeaders = {
 
 const baseURL = "http://localhost:8000";
 
+// Priority for metadata is given in following order:
+// Twitter -> Open Graph -> Normal
+export function formatMetadata(info) {
+	let final = {};
+
+	let metadata = info.metadata;
+	if (metadata.twitterTitle != undefined) {
+		final.title = metadata.twitterTitle;
+	} else if (metadata.ogTitle != undefined) {
+		final.title = metadata.ogTitle;
+	}
+
+	if (metadata.twitterDescription != undefined) {
+		final.description = metadata.twitterDescription;
+	} else if (metadata.ogDescription != undefined) {
+		final.description = metadata.ogDescription;
+	}
+
+	if (metadata.twitterImage != undefined) {
+		final.imageUrl = metadata.twitterImage.url;
+	} else if (metadata.ogImage != undefined) {
+		final.imageUrl = metadata.ogImage.url;
+	}
+
+	final.url = info.url;
+
+	return final;
+}
+
 // queries URLs info from the backend
 export async function getUrlsInfo(urls) {
+	if (urls.length == 0) {
+		return;
+	}
+
 	try {
 		let res = await fetch(baseURL + "/post/findUrlsInfo", {
 			method: "POST", // *GET, POST, PUT, DELETE, etc.

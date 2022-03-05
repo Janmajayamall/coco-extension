@@ -1,84 +1,20 @@
-import reactDom from "@hot-loader/react-dom";
 import React, { useEffect, useState } from "react";
 import ReactDOM from "react-dom";
-import {
-	ChakraProvider,
-	Text,
-	Flex,
-	Popover,
-	PopoverTrigger,
-	Portal,
-	PopoverContent,
-	Spinner,
-	extendTheme,
-	Tag,
-	Spacer,
-} from "@chakra-ui/react";
-import { ExternalLinkIcon } from "@chakra-ui/icons";
-import { mode } from "@chakra-ui/theme-tools";
-import {
-	findUrlName,
-	getUrlsInfo,
-	webUrl,
-	constants,
-	truncateStrToLength,
-} from "../utils";
+import { getUrlsInfo } from "../utils";
 import Box from "@mui/material/Box";
 import Popper from "@mui/material/Popper";
 import SvgIcon from "@mui/material/SvgIcon";
-import Stack from "@mui/material/Stack";
 import CircularProgress from "@mui/material/CircularProgress";
-import Typography from "@mui/material/Typography";
-import Paper from "@mui/material/Paper";
-import Link from "@mui/material/Link";
 import { createTheme, ThemeProvider } from "@mui/material/styles";
+import ClickAwayListener from "@mui/material/ClickAwayListener";
+import MetadataDisplay from "../shared/MetadataDisplay";
 
 // mui theme
-const darkTheme = createTheme({
+const muiTheme = createTheme({
 	palette: {
 		mode: "light",
 	},
 });
-
-// chakra ui theme
-const theme = extendTheme({
-	styles: {
-		global: (props) => ({
-			body: {
-				bg: mode("#edf2f7", "#edf2f7")(props),
-			},
-		}),
-	},
-});
-
-// Priority for metadata is given in following order:
-// Twitter -> Open Graph -> Normal
-function formatMetadata(info) {
-	let final = {};
-
-	let metadata = info.metadata;
-	if (metadata.twitterTitle != undefined) {
-		final.title = metadata.twitterTitle;
-	} else if (metadata.ogTitle != undefined) {
-		final.title = metadata.ogTitle;
-	}
-
-	if (metadata.twitterDescription != undefined) {
-		final.description = metadata.twitterDescription;
-	} else if (metadata.ogDescription != undefined) {
-		final.description = metadata.ogDescription;
-	}
-
-	if (metadata.twitterImage != undefined) {
-		final.imageUrl = metadata.twitterImage.url;
-	} else if (metadata.ogImage != undefined) {
-		final.imageUrl = metadata.ogImage.url;
-	}
-
-	final.url = info.url;
-
-	return final;
-}
 
 function CocoIcon(props) {
 	return (
@@ -93,7 +29,7 @@ function CocoIcon(props) {
 		</SvgIcon>
 	);
 }
-function InsertCardG({ urls }) {
+function InsertCard({ urls }) {
 	const [anchorEl, setAnchorEl] = useState(null);
 
 	const [urlsInfo, setUrlsInfo] = useState([]);
@@ -117,6 +53,7 @@ function InsertCardG({ urls }) {
 	}
 
 	const handlePopperOpen = (event) => {
+		event.stopPropagation();
 		setAnchorEl(anchorEl ? null : event.currentTarget);
 	};
 
@@ -131,251 +68,33 @@ function InsertCardG({ urls }) {
 
 	return (
 		<div>
-			<div style={{ height: 15, width: 15 }}>
+			<div style={{ height: 18, width: 18 }}>
 				<CocoIcon onClick={handlePopperOpen} />
 			</div>
 
 			<Popper id={id} open={open} anchorEl={anchorEl}>
-				<Box
-					sx={{
-						width: 400,
-						backgroundColor: "background.default",
-						borderRadius: 2,
-						padding: 2,
-						display: "flex",
-						justifyContent: "center",
-						alignItems: "center",
-					}}
-				>
-					{loading == true ? <CircularProgress size={30} /> : undefined}
-					{urlsInfo.map((info) => {
-						const formattedMetadata = formatMetadata(info);
-						return (
-							<Paper
-								sx={{
-									backgroundColor: "grey.100",
-									borderRadius: 2,
-									padding: 1,
-								}}
-							>
-								<Stack>
-									<Typography variant="body2">
-										{findUrlName(formattedMetadata.url)}
-									</Typography>
-
-									<Typography variant="body1" gutterBottom>
-										{truncateStrToLength(
-											formattedMetadata.title,
-											constants.CHAR_COUNTS.URL_TITLE
-										)}
-									</Typography>
-									<Typography variant="body2" gutterBottom>
-										{truncateStrToLength(
-											formattedMetadata.description,
-											constants.CHAR_COUNTS
-												.URL_DESCRIPTION
-										)}
-									</Typography>
-									<Stack direction={"row"} spacing={4}>
-										{info.qStatus ==
-											constants.QUERY_STATUS.FOUND &&
-										info.onChainData ? (
-											<Typography
-												variant="body2"
-												display="block"
-												sx={{
-													color:
-														info.onChainData
-															.outcome == 1
-															? "success.main"
-															: "error.main",
-												}}
-											>
-												{`Status: ${
-													info.onChainData.outcome ==
-													1
-														? "YES"
-														: "NO"
-												}`}
-											</Typography>
-										) : (
-											<Typography
-												variant="body2"
-												display="block"
-												sx={{
-													color:
-														info.qStatus ==
-														constants.QUERY_STATUS
-															.FOUND
-															? "success.main"
-															: "error.main",
-												}}
-											>
-												{info.qStatus ==
-												constants.QUERY_STATUS.FOUND
-													? "Found"
-													: "Not found"}
-											</Typography>
-										)}
-										{info.qStatus ==
-										constants.QUERY_STATUS.FOUND ? (
-											<Link
-												variant="body2"
-												href={`${webUrl}/post/${info.post.marketIdentifier}`}
-												target="_blank"
-											>
-												{"View on COCO"}
-											</Link>
-										) : (
-											<Link
-												variant="body2"
-												href={`${webUrl}/new/${encodeURIComponent(
-													info.url
-												)}`}
-												target="_blank"
-											>
-												{"Add to COCO"}
-											</Link>
-										)}
-									</Stack>
-								</Stack>
-							</Paper>
-						);
-					})}
-				</Box>
-			</Popper>
-		</div>
-	);
-}
-
-function InsertCard({ urls }) {
-	async function urlsInfoHelper() {
-		try {
-			if (urls.length == 0 || urlsInfo.length != 0) {
-				return;
-			}
-			setLoading(true);
-			const res = await getUrlsInfo(urls);
-			if (res == undefined) {
-				return;
-			}
-			setUrlsInfo(res.urlsInfo);
-			setLoading(false);
-		} catch (e) {
-			setLoading(false);
-		}
-	}
-
-	return (
-		<Popover onOpen={urlsInfoHelper} isLazy={true}>
-			<PopoverTrigger>
-				<Text>COCO</Text>
-			</PopoverTrigger>
-
-			<Portal>
-				<PopoverContent minW={400}>
-					<Flex flexDirection={"column"}>
-						{loading == true ? <Spinner /> : undefined}
-						{urls.length == 0 ? (
-							<Text>No link found</Text>
+				<ClickAwayListener onClickAway={handlePopperOpen}>
+					<Box
+						sx={{
+							width: 400,
+							backgroundColor: "background.default",
+							borderRadius: 2,
+							padding: 2,
+							display: "flex",
+							justifyContent: "center",
+							alignItems: "center",
+						}}
+					>
+						{loading == true ? (
+							<CircularProgress size={30} />
 						) : undefined}
 						{urlsInfo.map((info) => {
-							const formattedMetadata = formatMetadata(info);
-							return (
-								<Flex
-									padding={2}
-									backgroundColor={constants.COLORS.PRIMARY}
-									borderRadius={8}
-									marginBottom={4}
-									flexDirection={"column"}
-								>
-									<Text fontSize={13}>
-										{findUrlName(formattedMetadata.url)}
-									</Text>
-									<Text fontSize={15}>
-										{truncateStrToLength(
-											formattedMetadata.title,
-											constants.CHAR_COUNTS.URL_TITLE
-										)}
-									</Text>
-									<Text fontSize={13}>
-										{truncateStrToLength(
-											formattedMetadata.description,
-											constants.CHAR_COUNTS
-												.URL_DESCRIPTION
-										)}
-									</Text>
-									<Flex marginTop={1}>
-										{info.qStatus ==
-											constants.QUERY_STATUS.FOUND &&
-										onChainData.outcome ? (
-											<Tag
-												size={"md"}
-												variant="solid"
-												colorScheme={
-													onChainData.outcome == 1
-														? "green"
-														: "red"
-												}
-											>
-												{`Status: ${
-													onChainData.outcome == 1
-														? "YES"
-														: "NO"
-												}`}
-											</Tag>
-										) : (
-											<Tag
-												size={"md"}
-												variant="solid"
-												colorScheme={
-													info.qStatus ==
-													constants.QUERY_STATUS.FOUND
-														? "green"
-														: "red"
-												}
-											>
-												{info.qStatus ==
-												constants.QUERY_STATUS.FOUND
-													? "Found"
-													: "Not found"}
-											</Tag>
-										)}
-										<Spacer />
-										{info.qStatus ==
-										constants.QUERY_STATUS.FOUND ? (
-											<Link
-												fontSize={13}
-												fontWeight="semibold"
-												href={`${webUrl}/post/${info.post.marketIdentifier}`}
-												isExternal
-											>
-												{"View on COCO"}
-												<ExternalLinkIcon mx="2px" />
-											</Link>
-										) : (
-											<Link
-												fontSize={13}
-												fontWeight="semibold"
-												// appends googleTitle if the link to
-												// be added is from google search
-												href={`${webUrl}/new/${encodeURIComponent(
-													info.url
-												)}`}
-												isExternal
-											>
-												{"Add to COCO"}
-												<ExternalLinkIcon mx="2px" />
-											</Link>
-										)}
-									</Flex>
-								</Flex>
-							);
+							return <MetadataDisplay info={info} />;
 						})}
-					</Flex>
-				</PopoverContent>
-			</Portal>
-		</Popover>
+					</Box>
+				</ClickAwayListener>
+			</Popper>
+		</div>
 	);
 }
 
@@ -392,26 +111,33 @@ export function setupShadowRoot(root) {
 	// add div with id "root" for react
 	let div = document.createElement("div");
 	div.setAttribute("id", "root");
-	div.innerHTML = "JDIAWJDOI";
+	div.setAttribute(
+		"style",
+		`
+		display: flex;
+		height: 100%;
+		align-items: center;
+		`
+	);
 	root.appendChild(div);
 }
 
 export function renderGoogle(root, urls) {
 	ReactDOM.render(
 		<React.StrictMode>
-			<ThemeProvider theme={darkTheme}>
-				<InsertCardG urls={urls} />
+			<ThemeProvider theme={muiTheme}>
+				<InsertCard urls={urls} />
 			</ThemeProvider>
 		</React.StrictMode>,
 		root.getElementById("root")
 	);
 }
 
-export function renderTwitter(rootSpan, urls) {
+export function renderTwitter(root, urls) {
 	ReactDOM.render(
 		<React.StrictMode>
-			<ThemeProvider theme={darkTheme}>
-				<InsertCardG urls={urls} />
+			<ThemeProvider theme={muiTheme}>
+				<InsertCard urls={urls} />
 			</ThemeProvider>
 		</React.StrictMode>,
 		root.getElementById("root")

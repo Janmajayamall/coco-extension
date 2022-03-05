@@ -2,31 +2,24 @@ import React from "react";
 import ReactDOM from "react-dom";
 import "./index.css";
 import App from "./App";
-import { ChakraProvider, extendTheme } from "@chakra-ui/react";
 import { MemoryRouter } from "react-router";
-import { mode } from "@chakra-ui/theme-tools";
 import { store } from "./redux/store";
 import { Provider } from "react-redux";
+import { createTheme, ThemeProvider } from "@mui/material/styles";
 
-
-// chakra ui theme
-const theme = extendTheme({
-	styles: {
-		global: (props) => ({
-			body: {
-				bg: mode("#edf2f7", "#edf2f7")(props),
-				
-			},
-		}),
+// mui theme
+const muiTheme = createTheme({
+	palette: {
+		mode: "light",
 	},
 });
 
 ReactDOM.render(
 	<MemoryRouter>
 		<Provider store={store}>
-			<ChakraProvider theme={theme}>
+			<ThemeProvider theme={muiTheme}>
 				<App />
-			</ChakraProvider>
+			</ThemeProvider>
 		</Provider>
 	</MemoryRouter>,
 	window.document.getElementById("root")

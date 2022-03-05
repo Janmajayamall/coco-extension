@@ -1,14 +1,15 @@
-import { StylesProvider } from "@chakra-ui/react";
-import {
-	constants,
-	findDataFromGoogleSearch,
-	getUrlsInfo,
-	webUrl,
-} from "../utils";
+import { constants, findUrlType } from "../utils";
 import { renderGoogle, renderTwitter, setupShadowRoot } from "./reactRenderer";
 
 async function handleGoogleSearch() {
-	console.log(window.location.hostname, " is this google/ ");
+	console.log(window.location, " is this google/ ");
+
+	// only proceed if host is google
+	if (
+		findUrlType(window.location.href) != constants.URL_TYPES.GOOGLE_SEARCH
+	) {
+		return;
+	}
 
 	// normal search divs
 	var divs = document.getElementsByClassName("yuRUbf");
@@ -35,13 +36,7 @@ async function handleGoogleSearch() {
 
 		// add coco's shadow DOM
 		let rootSpan = document.createElement("span");
-		if (a[i].children[0].children.length == 1) {
-			// case - when there's no image on right
-			a[i].children[0].children[0].appendChild(rootSpan);
-		} else {
-			// case - when there's an image on right
-			a[i].children[0].children[1].appendChild(rootSpan);
-		}
+		a[i].parentElement.parentElement.prepend(rootSpan);
 
 		// setup shadow root
 		rootSpan.attachShadow({ mode: "open" });
@@ -52,6 +47,11 @@ async function handleGoogleSearch() {
 }
 
 export function handleTwitter() {
+	// only proceed if host is twitter
+	if (findUrlType(window.location.href) != constants.URL_TYPES.TWITTER) {
+		return;
+	}
+
 	var target = document.getElementById("react-root");
 
 	if (target) {
@@ -99,9 +99,9 @@ export function handleTwitter() {
 
 					// setup shadow root
 					rootSpan.attachShadow({ mode: "open" });
-					setupShadowRoot(rootSpan);
+					setupShadowRoot(rootSpan.shadowRoot);
 
-					renderTwitter(rootSpan, urls);
+					renderTwitter(rootSpan.shadowRoot, urls);
 				}
 			}
 		});
