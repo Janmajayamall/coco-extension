@@ -32,7 +32,12 @@ export const constants = {
 	},
 };
 
-export const webUrl = "http://65.108.59.231:3000";
+// prod
+export const webUrl = "http://extension.cocoverse.club";
+export const baseURL = "https://extension.backend.cocoverse.club";
+
+// dev
+// export const webUrl = "http://65.108.59.231:3000";
 
 export function findUrlName(url) {
 	let tmp = document.createElement("a");
@@ -96,8 +101,6 @@ export function filterUrls(urls) {
 const defaultHeaders = {
 	"Content-Type": "application/json",
 };
-
-const baseURL = "http://localhost:8000";
 
 // Priority for metadata is given in following order:
 // Twitter -> Open Graph -> Normal
@@ -174,11 +177,11 @@ export async function findAllDOMLinks() {
 export async function observeLinkChanges() {
 	// select the target node
 	var target = document.body;
-	console.log(" Yo I received :P");
+
 	// create an observer instance
 	var observer = new MutationObserver(async function (mutations) {
 		let arr = [];
-		console.log("Mutations triggered");
+
 		mutations.forEach(function (mutation) {
 			arr.push(mutation.target.href);
 		});
@@ -189,7 +192,6 @@ export async function observeLinkChanges() {
 			type: "ADD_URLS",
 			urls: arr,
 		});
-		console.log("Mutations triggered finished");
 	});
 
 	// configuration of the observer:

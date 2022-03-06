@@ -2,8 +2,6 @@ import { constants, findUrlType } from "../utils";
 import { renderGoogle, renderTwitter, setupShadowRoot } from "./reactRenderer";
 
 async function handleGoogleSearch() {
-	console.log(window.location, " is this google/ ");
-
 	// only proceed if host is google
 	if (
 		findUrlType(window.location.href) != constants.URL_TYPES.GOOGLE_SEARCH
