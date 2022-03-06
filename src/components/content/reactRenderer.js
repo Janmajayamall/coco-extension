@@ -8,6 +8,8 @@ import CircularProgress from "@mui/material/CircularProgress";
 import { createTheme, ThemeProvider } from "@mui/material/styles";
 import ClickAwayListener from "@mui/material/ClickAwayListener";
 import MetadataDisplay from "../shared/MetadataDisplay";
+import Typography from "@mui/material/Typography";
+import Paper from "@mui/material/Paper";
 
 // mui theme
 const muiTheme = createTheme({
@@ -85,11 +87,25 @@ function InsertCard({ urls }) {
 							alignItems: "center",
 						}}
 					>
+						{urls.length == 0 ? (
+							<Paper
+								sx={{
+									backgroundColor: "grey.100",
+									borderRadius: 2,
+									padding: 1,
+									width: "100%",
+								}}
+							>
+								<Typography variant="body2">
+									No link found
+								</Typography>
+							</Paper>
+						) : undefined}
 						{loading == true ? (
 							<CircularProgress size={30} />
 						) : undefined}
-						{urlsInfo.map((info) => {
-							return <MetadataDisplay info={info} />;
+						{urlsInfo.map((info, index) => {
+							return <MetadataDisplay key={index} info={info} />;
 						})}
 					</Box>
 				</ClickAwayListener>
