@@ -33,12 +33,12 @@ export const constants = {
 };
 
 // prod
-// export const webUrl = "http://extension.cocoverse.club";
-// export const baseURL = "https://extension.backend.cocoverse.club";
+export const webUrl = "http://extension.cocoverse.club";
+export const baseURL = "https://extension.backend.cocoverse.club";
 
 // dev
-export const webUrl = "http://65.108.59.231:3000";
-export const baseURL = "http://localhost:8000";
+// export const webUrl = "http://65.108.59.231:5000";
+// export const baseURL = "http://localhost:8000";
 
 export function findUrlName(url) {
 	let tmp = document.createElement("a");

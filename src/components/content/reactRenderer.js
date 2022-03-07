@@ -131,7 +131,6 @@ export function setupShadowRoot(root) {
 		"style",
 		`
 		display: flex;
-		height: 100%;
 		align-items: center;
 		`
 	);
